@@ -2,110 +2,91 @@
 #include <iostream>
 
 
-void setNeighbourCells(double& Ve,
-	double& Vw,
-	double& Vn,
-	double& Vs,
-	const Eigen::VectorXd& V,
-	int n,
-	int k,
-	int N)
+void ODESolver::initialise(int numberOfXNodes, int numberOfYNodes)
 {
-	double leftBoundary = 100;
-	double rightBoundary = 0;
-	double topBoundary = 0;
-	double bottomBoundary = 100;
+	nx = numberOfXNodes;
+	ny = numberOfYNodes;
 
-	if ((n + 1) % k != 0) // Check right boundary
-	{
-		Ve = V[n + 1];
-	}
-	else // Apply right boundary condition
-	{
-		Ve = 2 * rightBoundary - V[n - 1];
-	}
-
-	if (n % k != 0) // Check left boundary
-	{
-		Vw = V[n - 1];
-	}
-	else // Apply left boundary condition
-	{
-		Vw = 2 * leftBoundary - V[n + 1];
-	}
-
-	if (n + k < N) // Check top boundary
-	{
-		Vn = V[n + k];
-	}
-	else // Apply top boundary condition
-	{
-		Vn = 2 * topBoundary - V[n - k];
-	}
-
-	if (n - k >= 0) // Check bottom boundary
-	{
-		Vs = V[n - k];
-	}
-	else // Apply bottom boundary condition
-	{
-		Vs = 2 * bottomBoundary - V[n + k];
-	}
+	Ao.setConstant(nx, ny, 0.0);
+	Ae.setConstant(nx, ny, 0.0);
+	Aw.setConstant(nx, ny, 0.0);
+	An.setConstant(nx, ny, 0.0);
+	As.setConstant(nx, ny, 0.0);
+	S.setConstant(nx, ny, 0.0);	
 }
 
-void ODESolver::initialise(int numberOfNodes)
-{
-	k = numberOfNodes;
-}
 
-void ODESolver::solve(Eigen::VectorXd& V)
+void ODESolver::solve(Eigen::MatrixXd& var)
 {
 	// Gauss-seidel method
-	double error = getResudule(V);
+	double error = getResidual(var);
 	int itterations = 0;
 
 	while (error > m_tolerance)
 	{
-		update(V);
-		error = getResudule(V);
+		update(var);
+		error = getResidual(var);
 		itterations++;
 	}
 
-	std::cout << "Equation Solved Successfully. \nError : " << error << "\tItterations : " << itterations << std::endl;
+	std::cout << "Equation Solved Successfully. \nError : " << error << "\tInner Itterations : " << itterations << std::endl;
 }
 
-void ODESolver::update(Eigen::VectorXd& V)
+
+void ODESolver::update(Eigen::MatrixXd& var)
 {
-	auto N = (int)V.size();
-
-	double Ve = 0.0;
-	double Vw = 0.0;
-	double Vn = 0.0;
-	double Vs = 0.0;
-
-	for (int n = 0; n < N; ++n)
+	for (int x = 0; x < nx; ++x)
 	{
-		setNeighbourCells(Ve, Vw, Vn, Vs, V, n, k, N);
-		V[n] = (-1 / Ao[n]) * (Ae[n] * Ve + Aw[n] * Vw + An[n] * Vn + As[n] * Vs - S[n]);
+		for (int y = 0; y < ny; ++y)
+		{
+			setNeighbourCells(var, x, y);
+			var(x, y) = (-1 / Ao(x, y)) * (Ae(x, y) * ve + Aw(x, y) * vw + An(x, y) * vn + As(x, y) * vs - S(x, y));
+		}
 	}
 }
 
-double ODESolver::getResudule(const Eigen::VectorXd& V)
+
+double ODESolver::getResidual(const Eigen::MatrixXd& var)
 {
-	auto res = V; // Create a copy to write the error to
-	auto N = (int)V.size();
+	auto res = var; // Create a copy to write the error to
 
-	double Ve = 0.0;
-	double Vw = 0.0;
-	double Vn = 0.0;
-	double Vs = 0.0;
-
-	for (int n = 0; n < N; ++n)
+	for (int x = 0; x < nx; ++x)
 	{
-		setNeighbourCells(Ve, Vw, Vn, Vs, V, n, k, N);
-		res[n] = V[n] * Ao[n] + Ae[n] * Ve + Aw[n] * Vw + An[n] * Vn + As[n] * Vs - S[n];
+		for (int y = 0; y < ny; ++y)
+		{
+			setNeighbourCells(var, x, y);
+			res(x, y) = Ao(x, y) * var(x, y) + Ae(x, y) * ve + Aw(x, y) * vw + An(x, y) * vn + As(x, y) * vs - S(x, y);
+		}
 	}
 
 	return res.norm();
 }
 
+
+void ODESolver::setNeighbourCells(const Eigen::MatrixXd& var, int x, int y)
+{
+	ve = 0.0;
+	vw = 0.0;
+	vs = 0.0;
+	vn = 0.0;
+
+	if (x < nx - 1) // not at the right boundary
+	{
+		ve = var(x + 1, y);
+	}
+
+	if (x > 0) // not at the left boundary
+	{
+		vw = var(x - 1, y);
+	}
+
+	if (y < ny - 1) // not at the top boundary
+	{
+		ve = var(x, y + 1);
+	}
+
+	if (y > 0) // not at the bottom boundary
+	{
+		vw = var(x, y - 1);
+	}
+}

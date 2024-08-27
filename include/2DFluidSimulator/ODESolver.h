@@ -8,22 +8,29 @@ public:
 	ODESolver() = default;
 	~ODESolver() = default;
 
-	void initialise(int numberOfNodes);
-	void solve(Eigen::VectorXd& V);
+	void initialise(int numberOfXNodes, int numberOfYNodes);
+	void solve(Eigen::MatrixXd& var);
 
-	Eigen::VectorXd Ao{};
-	Eigen::VectorXd Ae{};
-	Eigen::VectorXd Aw{};
-	Eigen::VectorXd An{};
-	Eigen::VectorXd As{};
-	Eigen::VectorXd S{};
+	Eigen::MatrixXd Ao{};
+	Eigen::MatrixXd Ae{};
+	Eigen::MatrixXd Aw{};
+	Eigen::MatrixXd An{};
+	Eigen::MatrixXd As{};
+	Eigen::MatrixXd S{};
+
+	double leftBoundary{};
+	double rightBoundary{};
+	double topBoundary{};
+	double bottomBoundary{};
 
 private:
 	double m_tolerance = 1e-6;
-	int k{}; // number of x nodes
-
+	int nx, ny;
+	double ve, vw, vn, vs;
+	
 private:
-	void update(Eigen::VectorXd& V);
-	double getResudule(const Eigen::VectorXd& V);
+	void update(Eigen::MatrixXd& var);
+	double getResidual(const Eigen::MatrixXd& var);
+	void setNeighbourCells(const Eigen::MatrixXd& var, int x, int y);
 
 };

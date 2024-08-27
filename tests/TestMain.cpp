@@ -12,6 +12,10 @@ int main()
 	domain.getMesh().setDomainLengthY(1);
 
 	auto diffusion = std::make_unique<Equation_Diffusion>();
+	diffusion->setLeftBoundaryCondition(100);
+	diffusion->setRightBoundaryCondition(0);
+	diffusion->setTopBoundaryCondition(0);
+	diffusion->setBottomBoundaryCondition(100);
 	domain.addEquation(std::move(diffusion));
 
 	domain.run();
