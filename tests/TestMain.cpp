@@ -2,6 +2,8 @@
 
 #include "2DFluidSimulator/Domain.h"
 #include "2DFluidSimulator/Equation_Diffusion.h"
+#include "imgui/imgui.h"
+
 
 int main() 
 {
@@ -12,9 +14,12 @@ int main()
 	domain.getMesh().setDomainLengthY(1);
 
 	auto diffusion = std::make_unique<Equation_Diffusion>();
+
 	domain.addEquation(std::move(diffusion));
 
-	domain.run();
+	ImGui::ShowDemoWindow();
+
+	//domain.run();
 
 	return 0;
 }
