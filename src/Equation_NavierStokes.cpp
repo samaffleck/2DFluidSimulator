@@ -56,7 +56,7 @@ void Equation_NavierStokes::update()
 		m_solver.solve(v);
 
 		// Calculate the face velocities using PWIM
-		// updateFaceVelocities();
+		updateFaceVelocities();
 
 		// Calculate pressure links and mass imbalance
 		// updatePressureLinks();
@@ -72,6 +72,72 @@ void Equation_NavierStokes::update()
 
 		itt++;
 	}
+}
+
+
+void Equation_NavierStokes::updateFaceVelocities()
+{
+	// Get constants
+	double dx = p_mesh->getCells()[0][0].dx;
+	double dy = p_mesh->getCells()[0][0].dy;
+
+	// BOTTOM LEFT CORNER
+	int x = 0;
+	int y = 0;
+
+
+	// BOTTOM RIGHT CORNER
+	x = nx - 1;
+	y = 0;
+
+
+	// TOP LEFT CORNER
+	x = 0;
+	y = ny - 1;
+
+
+	// TOP RIGHT CORNER
+	x = nx - 1;
+	y = ny - 1;
+
+
+	// BOTTOM FACE
+	y = 0;
+	for (x = 1; x < nx - 1; x++)
+	{
+
+	}
+
+	// TOP FACE
+	y = ny - 1;
+	for (x = 1; x < nx - 1; x++)
+	{
+
+	}
+
+	// LEFT FACE
+	x = 0;
+	for (y = 1; y < ny - 1; y++)
+	{
+
+	}
+
+	// RIGHT FACE
+	x = nx - 1;
+	for (y = 1; y < ny - 1; y++)
+	{
+
+	}
+
+	// INTERIOR NODES
+	for (x = 1; x < nx - 1; ++x)
+	{
+		for (y = 1; y < ny - 1; ++y)
+		{
+		}
+	}
+
+	// END OF MESH
 }
 
 

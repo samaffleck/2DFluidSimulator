@@ -37,6 +37,7 @@ private:
 
 private:
 	void updateLinkCoefficient();
+	void updateFaceVelocities();
 
 };
 
