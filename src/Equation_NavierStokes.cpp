@@ -108,14 +108,14 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	Sp_x(x, y) = 0.5 * dy * (p(x, y) - p(x + 1, y));
 	Sp_y(x, y) = 0.5 * dx * (p(x, y) - p(x, y + 1));
 
-	/// BOTTOM RIGHT CORNER
+	// BOTTOM RIGHT CORNER
 	x = nx - 1;
 	y = 0;
 
 	m_solver.Ae(x, y) = 0.0;
 
 	mflux = rho_face(x, y).west * vel_face(x, y).west;
-	mflux_face(x, y).east = 0.5 * (abs(mflux) - mflux);
+	mflux_face(x, y).west = 0.5 * (abs(mflux) - mflux);
 	m_solver.Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx + vis(x, y) * dyx / 3;
 
 	mflux = rho_face(x, y).north * vel_face(x, y).north;
@@ -132,27 +132,169 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	Sp_y(x, y) = 0.5 * dx * (p(x, y) - p(x, y + 1));
 
 	// TOP LEFT CORNER
+	x = 0;
+	y = ny - 1;
 
+	mflux = rho_face(x, y).east * vel_face(x, y).east;
+	mflux_face(x, y).east = 0.5 * (abs(mflux) - mflux);
+	m_solver.Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx - vis(x, y) * dyx / 3;
 
+	m_solver.Aw(x, y) = 0.0;
+
+	m_solver.An(x, y) = 0.0;
+
+	mflux = rho_face(x, y).south * vel_face(x, y).south;
+	mflux_face(x, y).south = 0.5 * (abs(mflux) - mflux);	
+	m_solver.As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
+
+	m_solver.Ao(x, y) = dy * mflux_face(x, y).east + dx * mflux_face(x, y).south + 
+						vis_face(x, y).east * dyx + vis_face(x, y).south * dxy +
+						3 * vis(x, y) * dyx;
+
+	Sp_x(x, y) = 0.5 * dy * (p(x, y) - p(x + 1, y));
+	Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y)) + u_lid * vis(x, y) * dxy;
 
 	// TOP RIGHT CORNER
+	x = nx - 1;
+	y = ny - 1;
 
+	m_solver.Ae(x, y) = 0.0;
 
+	mflux = rho_face(x, y).west * vel_face(x, y).west;
+	mflux_face(x, y).west = 0.5 * (abs(mflux) - mflux);
+	m_solver.Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx + vis(x, y) * dyx / 3;
+
+	m_solver.An(x, y) = 0.0;
+
+	mflux = rho_face(x, y).south * vel_face(x, y).south;
+	mflux_face(x, y).south = 0.5 * (abs(mflux) - mflux);	
+	m_solver.As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
+
+	m_solver.Ao(x, y) = dy * mflux_face(x, y).west + dx * mflux_face(x, y).south + 
+						vis_face(x, y).west * dyx + vis_face(x, y).south * dxy +
+						3 * vis(x, y) * dyx;
+
+	Sp_x(x, y) = 0.5 * dy * (p(x - 1, y) - p(x, y));
+	Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y)) + u_lid * vis(x, y) * dxy;
 
 	// BOTTOM FACE
+	y = 0;
+	for (x = 1; x < nx - 1; x++)
+	{
+		mflux = rho_face(x, y).east * vel_face(x, y).east;
+		mflux_face(x, y).east = 0.5 * (abs(mflux) - mflux);
+		m_solver.Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx;
 
+		mflux = rho_face(x, y).west * vel_face(x, y).west;
+		mflux_face(x, y).west = 0.5 * (abs(mflux) - mflux);
+		m_solver.Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx;
 
+		mflux = rho_face(x, y).north * vel_face(x, y).north;
+		mflux_face(x, y).north = 0.5 * (abs(mflux) - mflux);
+		m_solver.An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy - vis(x, y) * dxy / 3;
+		
+		m_solver.As(x, y) = 0.0;
+
+		m_solver.Ao(x, y) = dy * mflux_face(x, y).east + 
+							dy * mflux_face(x, y).west + 
+							dx * mflux_face(x, y).north + 
+							vis_face(x, y).north * dxy + 
+							3 * vis(x, y) * dxy + 
+							vis_face(x, y).east * dyx + 
+							vis_face(x, y).west * dyx;
+
+		Sp_x(x, y) = 0.5 * dy * (p(x - 1, y) - p(x + 1, y));
+		Sp_y(x, y) = 0.5 * dx * (p(x, y) - p(x, y + 1));
+	}
 
 	// TOP FACE
+	y = ny - 1;
+	for (x = 1; x < nx - 1; x++)
+	{
+		mflux = rho_face(x, y).east * vel_face(x, y).east;
+		mflux_face(x, y).east = 0.5 * (abs(mflux) - mflux);
+		m_solver.Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx;
 
+		mflux = rho_face(x, y).west * vel_face(x, y).west;
+		mflux_face(x, y).west = 0.5 * (abs(mflux) - mflux);
+		m_solver.Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx;
 
+		m_solver.An(x, y) = 0.0;
+		
+		mflux = rho_face(x, y).south * vel_face(x, y).south;
+		mflux_face(x, y).south = 0.5 * (abs(mflux) - mflux);	
+		m_solver.As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
+
+		m_solver.Ao(x, y) = dy * mflux_face(x, y).east + 
+							dy * mflux_face(x, y).west + 
+							dx * mflux_face(x, y).south + 
+							vis_face(x, y).south * dxy +
+							vis_face(x, y).east * dyx + 
+							vis_face(x, y).west * dyx;
+
+		Sp_x(x, y) = 0.5 * dy * (p(x - 1, y) - p(x + 1, y));
+		Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y)) + u_lid * vis(x, y) * dxy;
+	}
 
 	// LEFT FACE
+	x = 0;
+	for (y = 1; y < ny - 1; y++)
+	{
+		mflux = rho_face(x, y).east * vel_face(x, y).east;
+		mflux_face(x, y).east = 0.5 * (abs(mflux) - mflux);
+		m_solver.Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx - vis(x, y) * dyx / 3;
 
+		m_solver.Aw(x, y) = 0.0;
+	
+		mflux = rho_face(x, y).north * vel_face(x, y).north;
+		mflux_face(x, y).north = 0.5 * (abs(mflux) - mflux);
+		m_solver.An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy;
 
+		mflux = rho_face(x, y).south * vel_face(x, y).south;
+		mflux_face(x, y).south = 0.5 * (abs(mflux) - mflux);
+		m_solver.As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
+
+		m_solver.Ao(x, y) = dy * mflux_face(x, y).east + 
+							dx * mflux_face(x, y).north + 
+							dx * mflux_face(x, y).south + 
+							vis_face(x, y).south * dxy +
+							vis_face(x, y).north * dxy + 
+							vis_face(x, y).east * dyx + 
+							3 * vis(x, y) * dyx;
+
+		Sp_x(x, y) = 0.5 * dy * (p(x, y) - p(x + 1, y));
+		Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y + 1));
+	}
 
 	// RIGHT FACE
+	x = nx - 1;
+	for (y = 1; y < ny - 1; y++)
+	{
+		m_solver.Ae(x, y) = 0.0;
 
+		mflux = rho_face(x, y).west * vel_face(x, y).west;
+		mflux_face(x, y).west = 0.5 * (abs(mflux) - mflux);
+		m_solver.Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx + vis(x, y) * dyx / 3;
+		
+		mflux = rho_face(x, y).north * vel_face(x, y).north;
+		mflux_face(x, y).north = 0.5 * (abs(mflux) - mflux);
+		m_solver.An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy;
+
+		mflux = rho_face(x, y).south * vel_face(x, y).south;
+		mflux_face(x, y).south = 0.5 * (abs(mflux) - mflux);
+		m_solver.As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
+
+		m_solver.Ao(x, y) = dy * mflux_face(x, y).west + 
+							dx * mflux_face(x, y).north + 
+							dx * mflux_face(x, y).south + 
+							vis_face(x, y).south * dxy +
+							vis_face(x, y).north * dxy + 
+							vis_face(x, y).west * dyx - 
+							3 * vis(x, y) * dyx;
+
+		Sp_x(x, y) = 0.5 * dy * (p(x - 1, y) - p(x, y));
+		Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y + 1));
+	}
 
 
 	// INTERIOR NODES
