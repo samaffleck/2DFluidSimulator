@@ -17,6 +17,11 @@ public:
 
 	void initialise(int numberOfXCells, int numberOfYCells, Mesh* mesh);
 
+	void setLeftBoundaryCondition(double boundaryValue);
+	void setRightBoundaryCondition(double boundaryValue);
+	void setTopBoundaryCondition(double boundaryValue);
+	void setBottomBoundaryCondition(double boundaryValue);
+
 protected:
 	virtual void initialiseEquation(int numberOfXCells, int numberOfYCells) = 0;
 	Mesh* p_mesh = nullptr; // Non owning pointer to the mesh
@@ -26,3 +31,13 @@ protected:
 	// Initial Conditions?
 
 };
+
+
+struct FaceValue
+{
+	double east{};
+	double west{};
+	double north{};
+	double south{};
+};
+

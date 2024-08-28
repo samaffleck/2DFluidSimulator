@@ -14,7 +14,6 @@ int main()
 	domain.getMesh().setDomainLengthY(1);
 
 	auto diffusion = std::make_unique<Equation_Diffusion>();
-
 	domain.addEquation(std::move(diffusion));
 
 	ImGui::ShowDemoWindow();

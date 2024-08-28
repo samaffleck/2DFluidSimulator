@@ -33,6 +33,8 @@
 
 # Build Folders
 out
+build
+libs
 
 # Visual Studio
 .vs

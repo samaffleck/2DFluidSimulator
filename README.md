@@ -6,6 +6,7 @@ Build system uses cmake
 1. Clone the repositry: git clone 
 2. Create the "build" directory, and change directory into "build"
 3. Run: cmake ..
+On linux, run: make to generate the .a file and test executable
 
 # Linking to the libary
 Once you have built the libary, the .lib file will be in the build directory. You will need to include the "include" folder and link to the correct libary in your project
