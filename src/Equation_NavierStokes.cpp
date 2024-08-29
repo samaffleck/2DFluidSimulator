@@ -77,63 +77,394 @@ void Equation_NavierStokes::update()
 
 void Equation_NavierStokes::updateFaceVelocities()
 {
+	// Using PWIM Equations
+
 	// Get constants
 	double dx = p_mesh->getCells()[0][0].dx;
 	double dy = p_mesh->getCells()[0][0].dy;
 
-	// BOTTOM LEFT CORNER
+	// 1st LAYER
+	// BOTTOM LEFT CORNER (1st LAYER)
 	int x = 0;
 	int y = 0;
 
+	double ao_o = 1 / m_solver.Ao(x, y);
+	double ao_e = 1 / m_solver.Ao(x + 1, y);
+	double ao_w = 1 / m_solver.Ao(x - 1, y);
+	double ao_n = 1 / m_solver.Ao(x, y + 1);
+	double ao_s = 1 / m_solver.Ao(x, y - 1);
 
-	// BOTTOM RIGHT CORNER
+	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
+		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
+		0.25 * dy * ao_e * (p(x + 2, y) - p(x, y)) -
+		0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
+
+	vel_face(x, y).west = 0.0;
+
+	vel_face(x, y).north = 0.5 * (v(x, y) + v(x, y + 1)) +
+		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y)) +
+		0.25 * dx * ao_n * (p(x, y + 2) - p(x, y)) -
+		0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
+
+	vel_face(x, y).south = 0.0;
+
+	// x = 1, y = 0
+	x = 1;
+	y = 0;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+
+
+	// x = 0, y = 1
+	x = 0;
+	y = 1;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+
+
+
+	// BOTTOM RIGHT CORNER (1st LAYER)
 	x = nx - 1;
 	y = 0;
 
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
 
-	// TOP LEFT CORNER
-	x = 0;
-	y = ny - 1;
+	vel_face(x, y).east = 0.0;
 
+	vel_face(x, y).west = 0.5 * (u(x, y) + u(x - 1, y)) +
+		0.25 * dy * ao_o * (p(x, y) - p(x - 1, y)) +
+		0.25 * dy * ao_w * (p(x, y) - p(x - 2, y)) -
+		0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
 
-	// TOP RIGHT CORNER
-	x = nx - 1;
-	y = ny - 1;
+	vel_face(x, y).north = 0.5 * (v(x, y) + v(x, y + 1)) +
+		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y)) +
+		0.25 * dx * ao_n * (p(x, y + 2) - p(x, y)) -
+		0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
 
+	vel_face(x, y).south = 0.0;
 
-	// BOTTOM FACE
+	// x = nx - 2, y = 0
+	x = nx - 2;
 	y = 0;
-	for (x = 1; x < nx - 1; x++)
-	{
 
-	}
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
 
-	// TOP FACE
-	y = ny - 1;
-	for (x = 1; x < nx - 1; x++)
-	{
 
-	}
 
-	// LEFT FACE
-	x = 0;
-	for (y = 1; y < ny - 1; y++)
-	{
-
-	}
-
-	// RIGHT FACE
+	// x = nx - 1, y = 1
 	x = nx - 1;
-	for (y = 1; y < ny - 1; y++)
+	y = 1;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+
+
+
+	// TOP LEFT CORNER (1st LAYER)
+	x = 0;
+	y = ny - 1;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
+		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
+		0.25 * dy * ao_e * (p(x + 2, y) - p(x, y)) -
+		0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
+
+	vel_face(x, y).west = 0.0;
+
+	vel_face(x, y).north = 0.0;
+
+	vel_face(x, y).south = 0.5 * (v(x, y) + v(x, y - 1)) +
+		0.25 * dx * ao_o * (p(x, y) - p(x, y - 1)) +
+		0.25 * dx * ao_s * (p(x, y) - p(x, y - 2)) -
+		0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
+
+	// x = 0, y = ny - 2
+	x = 0;
+	y = ny - 2;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+
+	// x = 1, y = ny - 1
+	x = 1;
+	y = ny - 1;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+
+
+
+	// TOP RIGHT CORNER (1st LAYER)
+	x = nx - 1;
+	y = ny - 1;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+	vel_face(x, y).east = 0.0;
+
+	vel_face(x, y).west = 0.5 * (u(x, y) + u(x - 1, y)) +
+		0.25 * dy * ao_o * (p(x, y) - p(x - 1, y)) +
+		0.25 * dy * ao_w * (p(x, y) - p(x - 2, y)) -
+		0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
+
+	vel_face(x, y).north = 0.0;
+
+	vel_face(x, y).south = 0.5 * (v(x, y) + v(x, y - 1)) +
+		0.25 * dx * ao_o * (p(x, y) - p(x, y - 1)) +
+		0.25 * dx * ao_s * (p(x, y) - p(x, y - 2)) -
+		0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
+
+	// x = nx - 2, y = ny - 1
+	x = nx - 2;
+	y = ny - 1;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+
+	// x = nx - 1, y = ny - 2
+	x = nx - 1;
+	y = ny - 2;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+
+
+
+	// BOTTOM FACE (1st LAYER)
+	y = 0;
+	for (x = 2; x < nx - 2; x++)
 	{
+		ao_o = 1 / m_solver.Ao(x, y);
+		ao_e = 1 / m_solver.Ao(x + 1, y);
+		ao_w = 1 / m_solver.Ao(x - 1, y);
+		ao_n = 1 / m_solver.Ao(x, y + 1);
+		ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+	}
+
+	// TOP FACE (1st LAYER)
+	y = ny - 1;
+	for (x = 2; x < nx - 2; x++)
+	{
+		ao_o = 1 / m_solver.Ao(x, y);
+		ao_e = 1 / m_solver.Ao(x + 1, y);
+		ao_w = 1 / m_solver.Ao(x - 1, y);
+		ao_n = 1 / m_solver.Ao(x, y + 1);
+		ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+	}
+
+	// LEFT FACE (1st LAYER)
+	x = 0;
+	for (y = 2; y < ny - 2; y++)
+	{
+		ao_o = 1 / m_solver.Ao(x, y);
+		ao_e = 1 / m_solver.Ao(x + 1, y);
+		ao_w = 1 / m_solver.Ao(x - 1, y);
+		ao_n = 1 / m_solver.Ao(x, y + 1);
+		ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+	}
+
+	// RIGHT FACE (1st LAYER)
+	x = nx - 1;
+	for (y = 2; y < ny - 2; y++)
+	{
+		ao_o = 1 / m_solver.Ao(x, y);
+		ao_e = 1 / m_solver.Ao(x + 1, y);
+		ao_w = 1 / m_solver.Ao(x - 1, y);
+		ao_n = 1 / m_solver.Ao(x, y + 1);
+		ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+	}
+
+	// 2nd LAYER
+	// BOTTOM LEFT CORNER (2nd LAYER)
+	int x = 1;
+	int y = 1;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+	// BOTTOM RIGHT CORNER (2nd LAYER)
+	x = nx - 2;
+	y = 1;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+	// TOP LEFT CORNER (2nd LAYER)
+	x = 1;
+	y = ny - 2;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+	// TOP RIGHT CORNER (2nd LAYER)
+	x = nx - 2;
+	y = ny - 2;
+
+	ao_o = 1 / m_solver.Ao(x, y);
+	ao_e = 1 / m_solver.Ao(x + 1, y);
+	ao_w = 1 / m_solver.Ao(x - 1, y);
+	ao_n = 1 / m_solver.Ao(x, y + 1);
+	ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+	// BOTTOM FACE (2nd LAYER)
+	y = 1;
+	for (x = 2; x < nx - 2; x++)
+	{
+		ao_o = 1 / m_solver.Ao(x, y);
+		ao_e = 1 / m_solver.Ao(x + 1, y);
+		ao_w = 1 / m_solver.Ao(x - 1, y);
+		ao_n = 1 / m_solver.Ao(x, y + 1);
+		ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+	}
+
+	// TOP FACE (2nd LAYER)
+	y = ny - 2;
+	for (x = 2; x < nx - 2; x++)
+	{
+		ao_o = 1 / m_solver.Ao(x, y);
+		ao_e = 1 / m_solver.Ao(x + 1, y);
+		ao_w = 1 / m_solver.Ao(x - 1, y);
+		ao_n = 1 / m_solver.Ao(x, y + 1);
+		ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+	}
+
+	// LEFT FACE (2nd LAYER)
+	x = 1;
+	for (y = 2; y < ny - 2; y++)
+	{
+		ao_o = 1 / m_solver.Ao(x, y);
+		ao_e = 1 / m_solver.Ao(x + 1, y);
+		ao_w = 1 / m_solver.Ao(x - 1, y);
+		ao_n = 1 / m_solver.Ao(x, y + 1);
+		ao_s = 1 / m_solver.Ao(x, y - 1);
+
+
+	}
+
+	// RIGHT FACE (2nd LAYER)
+	x = nx - 2;
+	for (y = 2; y < ny - 2; y++)
+	{
+		ao_o = 1 / m_solver.Ao(x, y);
+		ao_e = 1 / m_solver.Ao(x + 1, y);
+		ao_w = 1 / m_solver.Ao(x - 1, y);
+		ao_n = 1 / m_solver.Ao(x, y + 1);
+		ao_s = 1 / m_solver.Ao(x, y - 1);
+
 
 	}
 
 	// INTERIOR NODES
-	for (x = 1; x < nx - 1; ++x)
+	for (x = 2; x < nx - 2; ++x)
 	{
-		for (y = 1; y < ny - 1; ++y)
+		for (y = 2; y < ny - 2; ++y)
 		{
+			ao_o = 1 / m_solver.Ao(x, y);
+			ao_e = 1 / m_solver.Ao(x + 1, y);
+			ao_w = 1 / m_solver.Ao(x - 1, y);
+			ao_n = 1 / m_solver.Ao(x, y + 1);
+			ao_s = 1 / m_solver.Ao(x, y - 1);
+
+			vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
+				0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
+				0.25 * dy * ao_e * (p(x + 2, y) - p(x, y)) -
+				0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
+
+			vel_face(x, y).west = 0.5 * (u(x, y) + u(x - 1, y)) +
+				0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
+				0.25 * dy * ao_w * (p(x, y) - p(x - 2, y)) -
+				0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
+
+			vel_face(x, y).north = 0.5 * (v(x, y) + v(x, y + 1)) +
+				0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
+				0.25 * dx * ao_n * (p(x, y + 2) - p(x, y)) -
+				0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
+
+			vel_face(x, y).south = 0.5 * (v(x, y) + v(x, y - 1)) +
+				0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
+				0.25 * dx * ao_s * (p(x, y) - p(x, y - 2)) -
+				0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
+
 		}
 	}
 
