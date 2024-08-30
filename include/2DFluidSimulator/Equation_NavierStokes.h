@@ -11,7 +11,9 @@ private:
 
 	// Cell center values
 	Eigen::MatrixXd u{};		// Vecloity in x-direction
+	Eigen::MatrixXd u_c{};		// Vecloity correction in x-direction
 	Eigen::MatrixXd v{};		// Vecloity in y-direction
+	Eigen::MatrixXd v_c{};		// Vecloity correction in y-direction
 	Eigen::MatrixXd p{};		// Absolute pressure
 	Eigen::MatrixXd p_c{};		// Pressure correction
 	Eigen::MatrixXd vis{};		// Viscosity [Pa-s]
@@ -19,6 +21,7 @@ private:
 	
 	// Face values accessed by: FACE_VALUE(x, y).east/west/north/south
 	Eigen::MatrixX<FaceValue> vel_face{};	// Vecloity [m/s]
+	Eigen::MatrixX<FaceValue> vel_c_face{};	// Vecloity correction [m/s]
 	Eigen::MatrixX<FaceValue> vis_face{};	// Viscosity [Pa-s]
 	Eigen::MatrixX<FaceValue> rho_face{};	// Density [kg/m3]
 	Eigen::MatrixX<FaceValue> mflux_face{};	// Mass Flux [kg/(m2-s)]
@@ -45,6 +48,10 @@ private:
 	double res_v;
 	double res_p;
 
+	// Tuning parameters
+	double p_scalar = 0.2;
+	double vel_scalar = 0.8;
+
 	// Other
 	int nx{};
 	int ny{};
@@ -54,6 +61,8 @@ private:
 	void updateLinkCoefficient();
 	void updateFaceVelocities();
 	void updatePressureLinks();
+	void updateVelocityCorrection();
+	void correctVelocityAndPressure();
 
 };
 
