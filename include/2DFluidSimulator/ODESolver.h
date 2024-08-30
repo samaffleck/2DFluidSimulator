@@ -9,14 +9,27 @@ public:
 	~ODESolver() = default;
 
 	void initialise(int numberOfXNodes, int numberOfYNodes);
-	void solve(Eigen::MatrixXd& var);
+	void solve(Eigen::MatrixXd& var,
+		const Eigen::MatrixXd& Ao,
+		const Eigen::MatrixXd& Ae,
+		const Eigen::MatrixXd& Aw,
+		const Eigen::MatrixXd& An,
+		const Eigen::MatrixXd& As,
+		const Eigen::MatrixXd& S);
 
-	Eigen::MatrixXd Ao{};
-	Eigen::MatrixXd Ae{};
-	Eigen::MatrixXd Aw{};
-	Eigen::MatrixXd An{};
-	Eigen::MatrixXd As{};
-	Eigen::MatrixXd S{};
+	//Eigen::MatrixXd Ao{};
+	//Eigen::MatrixXd Ae{};
+	//Eigen::MatrixXd Aw{};
+	//Eigen::MatrixXd An{};
+	//Eigen::MatrixXd As{};
+	//Eigen::MatrixXd S{};
+	//
+	//Eigen::MatrixXd Ap_o{};
+	//Eigen::MatrixXd Ap_e{};
+	//Eigen::MatrixXd Ap_w{};
+	//Eigen::MatrixXd Ap_n{};
+	//Eigen::MatrixXd Ap_s{};
+	//Eigen::MatrixXd Sp{};
 
 	double leftBoundary{};
 	double rightBoundary{};
@@ -29,8 +42,20 @@ private:
 	double ve, vw, vn, vs;
 	
 private:
-	void update(Eigen::MatrixXd& var);
-	double getResidual(const Eigen::MatrixXd& var);
+	void update(Eigen::MatrixXd& var, 
+		const Eigen::MatrixXd& Ao,
+		const Eigen::MatrixXd& Ae,
+		const Eigen::MatrixXd& Aw,
+		const Eigen::MatrixXd& An,
+		const Eigen::MatrixXd& As,
+		const Eigen::MatrixXd& S);
+	double getResidual(const Eigen::MatrixXd& var,
+		const Eigen::MatrixXd& Ao,
+		const Eigen::MatrixXd& Ae,
+		const Eigen::MatrixXd& Aw,
+		const Eigen::MatrixXd& An,
+		const Eigen::MatrixXd& As,
+		const Eigen::MatrixXd& S);
 	void setNeighbourCells(const Eigen::MatrixXd& var, int x, int y);
 
 };

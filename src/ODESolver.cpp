@@ -6,26 +6,25 @@ void ODESolver::initialise(int numberOfXNodes, int numberOfYNodes)
 {
 	nx = numberOfXNodes;
 	ny = numberOfYNodes;
-
-	Ao.setConstant(nx, ny, 0.0);
-	Ae.setConstant(nx, ny, 0.0);
-	Aw.setConstant(nx, ny, 0.0);
-	An.setConstant(nx, ny, 0.0);
-	As.setConstant(nx, ny, 0.0);
-	S.setConstant(nx, ny, 0.0);	
 }
 
 
-void ODESolver::solve(Eigen::MatrixXd& var)
+void ODESolver::solve(Eigen::MatrixXd& var,
+	const Eigen::MatrixXd& Ao,
+	const Eigen::MatrixXd& Ae,
+	const Eigen::MatrixXd& Aw,
+	const Eigen::MatrixXd& An,
+	const Eigen::MatrixXd& As,
+	const Eigen::MatrixXd& S)
 {
 	// Gauss-seidel method
-	double error = getResidual(var);
+	double error = getResidual(var, Ao, Ae, Aw, An, As, S);
 	int itterations = 0;
 
 	while (error > m_tolerance)
 	{
-		update(var);
-		error = getResidual(var);
+		update(var, Ao, Ae, Aw, An, As, S);
+		error = getResidual(var, Ao, Ae, Aw, An, As, S);
 		itterations++;
 	}
 
@@ -33,7 +32,13 @@ void ODESolver::solve(Eigen::MatrixXd& var)
 }
 
 
-void ODESolver::update(Eigen::MatrixXd& var)
+void ODESolver::update(Eigen::MatrixXd& var,
+	const Eigen::MatrixXd& Ao,
+	const Eigen::MatrixXd& Ae,
+	const Eigen::MatrixXd& Aw,
+	const Eigen::MatrixXd& An,
+	const Eigen::MatrixXd& As,
+	const Eigen::MatrixXd& S)
 {
 	for (int x = 0; x < nx; ++x)
 	{
@@ -46,7 +51,13 @@ void ODESolver::update(Eigen::MatrixXd& var)
 }
 
 
-double ODESolver::getResidual(const Eigen::MatrixXd& var)
+double ODESolver::getResidual(const Eigen::MatrixXd& var,
+	const Eigen::MatrixXd& Ao,
+	const Eigen::MatrixXd& Ae,
+	const Eigen::MatrixXd& Aw,
+	const Eigen::MatrixXd& An,
+	const Eigen::MatrixXd& As,
+	const Eigen::MatrixXd& S)
 {
 	auto res = var; // Create a copy to write the error to
 
