@@ -18,6 +18,19 @@ void Equation_NavierStokes::initialiseEquation(int numberOfXCells, int numberOfY
 	Sp_x.setConstant(nx, ny, 0.0);
 	Sp_y.setConstant(nx, ny, 0.0);
 
+	Ao.setConstant(nx, ny, 0.0);
+	Ae.setConstant(nx, ny, 0.0);
+	Aw.setConstant(nx, ny, 0.0);
+	An.setConstant(nx, ny, 0.0);
+	As.setConstant(nx, ny, 0.0);
+	
+	Ap_o.setConstant(nx, ny, 0.0);
+	Ap_e.setConstant(nx, ny, 0.0);
+	Ap_w.setConstant(nx, ny, 0.0);
+	Ap_n.setConstant(nx, ny, 0.0);
+	Ap_s.setConstant(nx, ny, 0.0);
+	Sp.setConstant(nx, ny, 0.0);
+
 	vel_face.resize(nx, ny);
 	rho_face.resize(nx, ny);
 	vis_face.resize(nx, ny);
@@ -48,21 +61,19 @@ void Equation_NavierStokes::update()
 		updateLinkCoefficient();
 
 		// solve x-momentum
-		m_solver.S = Sp_x;
-		m_solver.solve(u);
+		m_solver.solve(u, Ao, Ae, Aw, An, As, Sp_x);
 
 		// solve y-momentum
-		m_solver.S = Sp_y;
-		m_solver.solve(v);
+		m_solver.solve(v, Ao, Ae, Aw, An, As, Sp_y);
 
 		// Calculate the face velocities using PWIM
 		updateFaceVelocities();
 
 		// Calculate pressure links and mass imbalance
-		// updatePressureLinks();
+		updatePressureLinks();
 
 		// Solve pressure correction equation
-		//m_solver.solve(p_corr);
+		m_solver.solve(p_c, Ap_o, Ap_e, Ap_w, Ap_n, Ap_s, Sp);
 
 		// Correct velocities and pressure
 		// correctVelocitiesAndPressure();
@@ -82,17 +93,22 @@ void Equation_NavierStokes::updateFaceVelocities()
 	// Get constants
 	double dx = p_mesh->getCells()[0][0].dx;
 	double dy = p_mesh->getCells()[0][0].dy;
+	double ao_o = 0.0;
+	double ao_e = 0.0;
+	double ao_w = 0.0;
+	double ao_n = 0.0;
+	double ao_s = 0.0;
 
 	// 1st LAYER
 	// BOTTOM LEFT CORNER (1st LAYER)
 	int x = 0;
 	int y = 0;
 
-	double ao_o = 1 / m_solver.Ao(x, y);
-	double ao_e = 1 / m_solver.Ao(x + 1, y);
-	double ao_w = 1 / m_solver.Ao(x - 1, y);
-	double ao_n = 1 / m_solver.Ao(x, y + 1);
-	double ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 0.0;
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 0.0;
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
@@ -112,11 +128,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = 1;
 	y = 0;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 0.0;
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
@@ -140,11 +156,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = 0;
 	y = 1;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 0.0;
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
@@ -167,11 +183,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = nx - 1;
 	y = 0;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 0.0;
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 0.0;
 
 	vel_face(x, y).east = 0.0;
 
@@ -191,11 +207,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = nx - 2;
 	y = 0;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 0.0;
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
@@ -218,11 +234,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = nx - 1;
 	y = 1;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 0.0;
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.0;
 
@@ -245,11 +261,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = 0;
 	y = ny - 1;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 0.0;
+	ao_n = 0.0;
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
@@ -269,11 +285,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = 0;
 	y = ny - 2;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 0.0;
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
@@ -296,11 +312,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = 1;
 	y = ny - 1;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 0.0;
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
@@ -323,11 +339,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = nx - 1;
 	y = ny - 1;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 0.0;
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 0.0;
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.0;
 
@@ -347,11 +363,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = nx - 2;
 	y = ny - 1;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 0.0;
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
@@ -374,11 +390,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = nx - 1;
 	y = ny - 2;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 0.0;
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.0;
 
@@ -401,11 +417,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	y = 0;
 	for (x = 2; x < nx - 2; x++)
 	{
-		ao_o = 1 / m_solver.Ao(x, y);
-		ao_e = 1 / m_solver.Ao(x + 1, y);
-		ao_w = 1 / m_solver.Ao(x - 1, y);
-		ao_n = 1 / m_solver.Ao(x, y + 1);
-		ao_s = 1 / m_solver.Ao(x, y - 1);
+		ao_o = 1 / Ao(x, y);
+		ao_e = 1 / Ao(x + 1, y);
+		ao_w = 1 / Ao(x - 1, y);
+		ao_n = 1 / Ao(x, y + 1);
+		ao_s = 0.0;
 
 		vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 			0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
@@ -429,11 +445,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	y = ny - 1;
 	for (x = 2; x < nx - 2; x++)
 	{
-		ao_o = 1 / m_solver.Ao(x, y);
-		ao_e = 1 / m_solver.Ao(x + 1, y);
-		ao_w = 1 / m_solver.Ao(x - 1, y);
-		ao_n = 1 / m_solver.Ao(x, y + 1);
-		ao_s = 1 / m_solver.Ao(x, y - 1);
+		ao_o = 1 / Ao(x, y);
+		ao_e = 1 / Ao(x + 1, y);
+		ao_w = 1 / Ao(x - 1, y);
+		ao_n = 0.0;
+		ao_s = 1 / Ao(x, y - 1);
 
 		vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 			0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
@@ -457,11 +473,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = 0;
 	for (y = 2; y < ny - 2; y++)
 	{
-		ao_o = 1 / m_solver.Ao(x, y);
-		ao_e = 1 / m_solver.Ao(x + 1, y);
-		ao_w = 1 / m_solver.Ao(x - 1, y);
-		ao_n = 1 / m_solver.Ao(x, y + 1);
-		ao_s = 1 / m_solver.Ao(x, y - 1);
+		ao_o = 1 / Ao(x, y);
+		ao_e = 1 / Ao(x + 1, y);
+		ao_w = 0.0;
+		ao_n = 1 / Ao(x, y + 1);
+		ao_s = 1 / Ao(x, y - 1);
 
 		vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 			0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
@@ -485,11 +501,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = nx - 1;
 	for (y = 2; y < ny - 2; y++)
 	{
-		ao_o = 1 / m_solver.Ao(x, y);
-		ao_e = 1 / m_solver.Ao(x + 1, y);
-		ao_w = 1 / m_solver.Ao(x - 1, y);
-		ao_n = 1 / m_solver.Ao(x, y + 1);
-		ao_s = 1 / m_solver.Ao(x, y - 1);
+		ao_o = 1 / Ao(x, y);
+		ao_e = 0.0;
+		ao_w = 1 / Ao(x - 1, y);
+		ao_n = 1 / Ao(x, y + 1);
+		ao_s = 1 / Ao(x, y - 1);
 
 		vel_face(x, y).east = 0.0;
 
@@ -514,11 +530,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	int x = 1;
 	int y = 1;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
@@ -544,11 +560,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = nx - 2;
 	y = 1;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
@@ -574,11 +590,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = 1;
 	y = ny - 2;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
@@ -604,11 +620,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = nx - 2;
 	y = ny - 2;
 
-	ao_o = 1 / m_solver.Ao(x, y);
-	ao_e = 1 / m_solver.Ao(x + 1, y);
-	ao_w = 1 / m_solver.Ao(x - 1, y);
-	ao_n = 1 / m_solver.Ao(x, y + 1);
-	ao_s = 1 / m_solver.Ao(x, y - 1);
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
@@ -634,11 +650,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	y = 1;
 	for (x = 2; x < nx - 2; x++)
 	{
-		ao_o = 1 / m_solver.Ao(x, y);
-		ao_e = 1 / m_solver.Ao(x + 1, y);
-		ao_w = 1 / m_solver.Ao(x - 1, y);
-		ao_n = 1 / m_solver.Ao(x, y + 1);
-		ao_s = 1 / m_solver.Ao(x, y - 1);
+		ao_o = 1 / Ao(x, y);
+		ao_e = 1 / Ao(x + 1, y);
+		ao_w = 1 / Ao(x - 1, y);
+		ao_n = 1 / Ao(x, y + 1);
+		ao_s = 1 / Ao(x, y - 1);
 
 		vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 			0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
@@ -665,11 +681,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	y = ny - 2;
 	for (x = 2; x < nx - 2; x++)
 	{
-		ao_o = 1 / m_solver.Ao(x, y);
-		ao_e = 1 / m_solver.Ao(x + 1, y);
-		ao_w = 1 / m_solver.Ao(x - 1, y);
-		ao_n = 1 / m_solver.Ao(x, y + 1);
-		ao_s = 1 / m_solver.Ao(x, y - 1);
+		ao_o = 1 / Ao(x, y);
+		ao_e = 1 / Ao(x + 1, y);
+		ao_w = 1 / Ao(x - 1, y);
+		ao_n = 1 / Ao(x, y + 1);
+		ao_s = 1 / Ao(x, y - 1);
 
 		vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 			0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
@@ -696,11 +712,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = 1;
 	for (y = 2; y < ny - 2; y++)
 	{
-		ao_o = 1 / m_solver.Ao(x, y);
-		ao_e = 1 / m_solver.Ao(x + 1, y);
-		ao_w = 1 / m_solver.Ao(x - 1, y);
-		ao_n = 1 / m_solver.Ao(x, y + 1);
-		ao_s = 1 / m_solver.Ao(x, y - 1);
+		ao_o = 1 / Ao(x, y);
+		ao_e = 1 / Ao(x + 1, y);
+		ao_w = 1 / Ao(x - 1, y);
+		ao_n = 1 / Ao(x, y + 1);
+		ao_s = 1 / Ao(x, y - 1);
 
 		vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 			0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
@@ -728,11 +744,11 @@ void Equation_NavierStokes::updateFaceVelocities()
 	x = nx - 2;
 	for (y = 2; y < ny - 2; y++)
 	{
-		ao_o = 1 / m_solver.Ao(x, y);
-		ao_e = 1 / m_solver.Ao(x + 1, y);
-		ao_w = 1 / m_solver.Ao(x - 1, y);
-		ao_n = 1 / m_solver.Ao(x, y + 1);
-		ao_s = 1 / m_solver.Ao(x, y - 1);
+		ao_o = 1 / Ao(x, y);
+		ao_e = 1 / Ao(x + 1, y);
+		ao_w = 1 / Ao(x - 1, y);
+		ao_n = 1 / Ao(x, y + 1);
+		ao_s = 1 / Ao(x, y - 1);
 
 		vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 			0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
@@ -755,16 +771,16 @@ void Equation_NavierStokes::updateFaceVelocities()
 			0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
 	}
 
-	// INTERIOR NODES
+	// INTERIOR CELLS
 	for (x = 2; x < nx - 2; ++x)
 	{
 		for (y = 2; y < ny - 2; ++y)
 		{
-			ao_o = 1 / m_solver.Ao(x, y);
-			ao_e = 1 / m_solver.Ao(x + 1, y);
-			ao_w = 1 / m_solver.Ao(x - 1, y);
-			ao_n = 1 / m_solver.Ao(x, y + 1);
-			ao_s = 1 / m_solver.Ao(x, y - 1);
+			ao_o = 1 / Ao(x, y);
+			ao_e = 1 / Ao(x + 1, y);
+			ao_w = 1 / Ao(x - 1, y);
+			ao_n = 1 / Ao(x, y + 1);
+			ao_s = 1 / Ao(x, y - 1);
 
 			vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
 				0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
@@ -791,6 +807,158 @@ void Equation_NavierStokes::updateFaceVelocities()
 	// END OF MESH
 }
 
+void Equation_NavierStokes::updatePressureLinks()
+{
+	// Get constants
+	double dx = p_mesh->getCells()[0][0].dx;
+	double dy = p_mesh->getCells()[0][0].dy;
+	double dyy = dy * dy;
+	double dxx = dx * dx;
+	double ao_o = 0.0;
+	double ao_e = 0.0;
+	double ao_w = 0.0;
+	double ao_n = 0.0;
+	double ao_s = 0.0;
+
+	// BOTTOM LEFT CORNER
+	int x = 0;
+	int y = 0;
+
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 0.0;
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 0.0;
+
+	double rho_e = rho_face(x, y).east;
+	double rho_w = rho_face(x, y).west;
+	double rho_n = rho_face(x, y).north;
+	double rho_s = rho_face(x, y).south;
+
+	double u_e = vel_face(x, y).east;
+	double u_w = vel_face(x, y).west;
+	double v_n = vel_face(x, y).north;
+	double v_s = vel_face(x, y).south;
+
+	Ap_e(x, y) = -0.5 * rho_e * dyy * (ao_o + ao_e);
+	Ap_w(x, y) = 0.0;
+	Ap_n(x, y) = -0.5 * rho_n * dxx * (ao_o + ao_n);
+	Ap_s(x, y) = 0.0;
+	Ap_o(x, y) = -Ap_e(x, y) - Ap_n(x, y);
+	Sp(x, y) = -(dy * (rho_e * u_e) + dx * (rho_n * v_n));
+
+	// BOTTOM RIGHT CORNER
+	x = nx - 1;
+	y = 0;
+
+	ao_o = 1 / Ao(x, y);
+	ao_e = 0.0;
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 1 / Ao(x, y + 1);
+	ao_s = 0.0;
+
+	rho_e = rho_face(x, y).east;
+	rho_w = rho_face(x, y).west;
+	rho_n = rho_face(x, y).north;
+	rho_s = rho_face(x, y).south;
+
+	u_e = vel_face(x, y).east;
+	u_w = vel_face(x, y).west;
+	v_n = vel_face(x, y).north;
+	v_s = vel_face(x, y).south;
+
+	Ap_e(x, y) = 0.0;
+	Ap_w(x, y) = -0.5 * rho_w * dyy * (ao_o + ao_w);
+	Ap_n(x, y) = -0.5 * rho_n * dxx * (ao_o + ao_n);
+	Ap_s(x, y) = 0.0;
+	Ap_o(x, y) = -Ap_w(x, y) - Ap_n(x, y);
+	Sp(x, y) = -(dy * (- rho_w * u_w) + dx * (rho_n * v_n));
+
+	// TOP LEFT
+	x = 0;
+	y = ny - 1;
+
+	ao_o = 1 / Ao(x, y);
+	ao_e = 1 / Ao(x + 1, y);
+	ao_w = 0.0;
+	ao_n = 0.0;
+	ao_s = 1 / Ao(x, y - 1);
+
+	rho_e = rho_face(x, y).east;
+	rho_w = rho_face(x, y).west;
+	rho_n = rho_face(x, y).north;
+	rho_s = rho_face(x, y).south;
+
+	u_e = vel_face(x, y).east;
+	u_w = vel_face(x, y).west;
+	v_n = vel_face(x, y).north;
+	v_s = vel_face(x, y).south;
+
+	Ap_e(x, y) = -0.5 * rho_e * dyy * (ao_o + ao_e);
+	Ap_w(x, y) = 0.0;
+	Ap_n(x, y) = 0.0;
+	Ap_s(x, y) = -0.5 * rho_s * dxx * (ao_o + ao_s);
+	Ap_o(x, y) = -Ap_e(x, y) - Ap_s(x, y);
+	Sp(x, y) = -(dy * (rho_e * u_e) + dx * (- rho_s * v_s));
+
+	// TOP RIGHT
+	x = nx - 1;
+	y = ny - 1;
+
+	ao_o = 1 / Ao(x, y);
+	ao_e = 0.0;
+	ao_w = 1 / Ao(x - 1, y);
+	ao_n = 0.0;
+	ao_s = 1 / Ao(x, y - 1);
+
+	rho_e = rho_face(x, y).east;
+	rho_w = rho_face(x, y).west;
+	rho_n = rho_face(x, y).north;
+	rho_s = rho_face(x, y).south;
+
+	u_e = vel_face(x, y).east;
+	u_w = vel_face(x, y).west;
+	v_n = vel_face(x, y).north;
+	v_s = vel_face(x, y).south;
+
+	Ap_e(x, y) = 0.0;
+	Ap_w(x, y) = -0.5 * rho_w * dyy * (ao_o + ao_w);
+	Ap_n(x, y) = 0.0;
+	Ap_s(x, y) = -0.5 * rho_s * dxx * (ao_o + ao_s);
+	Ap_o(x, y) = -Ap_w(x, y) - Ap_s(x, y);
+	Sp(x, y) = -(dy * (- rho_w * u_w) + dx * (- rho_s * v_s));
+
+	// INTERIOR CELLS
+	for (x = 1; x < nx - 1; ++x)
+	{
+		for (y = 1; y < ny - 1; ++y)
+		{
+			ao_o = 1 / Ao(x, y);
+			ao_e = 1 / Ao(x + 1, y);
+			ao_w = 1 / Ao(x - 1, y);
+			ao_n = 1 / Ao(x, y + 1);
+			ao_s = 1 / Ao(x, y - 1);
+
+			rho_e = rho_face(x, y).east;
+			rho_w = rho_face(x, y).west;
+			rho_n = rho_face(x, y).north;
+			rho_s = rho_face(x, y).south;
+
+			u_e = vel_face(x, y).east;
+			u_w = vel_face(x, y).west;
+			v_n = vel_face(x, y).north;
+			v_s = vel_face(x, y).south;
+
+			Ap_e(x, y) = -0.5 * rho_e * dyy * (ao_o + ao_e);
+			Ap_w(x, y) = -0.5 * rho_w * dyy * (ao_o + ao_w);
+			Ap_n(x, y) = -0.5 * rho_n * dxx * (ao_o + ao_n);
+			Ap_s(x, y) = -0.5 * rho_s * dxx * (ao_o + ao_s);
+			Ap_o(x, y) = -Ap_e(x, y) - Ap_w(x, y) - Ap_n(x, y) - Ap_s(x, y);
+			Sp(x, y) = -(dy * (rho_e * u_e - rho_w * u_w) + dx * (rho_n * v_n - rho_s * v_s));
+		}
+	}
+}
+
 
 void Equation_NavierStokes::updateLinkCoefficient()
 {
@@ -808,17 +976,17 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	
 	mflux = rho_face(x, y).east * vel_face(x, y).east;
 	mflux_face(x, y).east = 0.5 * (abs(mflux) - mflux);
-	m_solver.Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx - vis(x, y) * dyx / 3;
+	Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx - vis(x, y) * dyx / 3;
 
-	m_solver.Aw(x, y) = 0.0;
+	Aw(x, y) = 0.0;
 
 	mflux = rho_face(x, y).north * vel_face(x, y).north;
 	mflux_face(x, y).north = 0.5 * (abs(mflux) - mflux);
-	m_solver.An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy - vis(x, y) * dxy / 3;
+	An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy - vis(x, y) * dxy / 3;
 	
-	m_solver.As(x, y) = 0.0;
+	As(x, y) = 0.0;
 
-	m_solver.Ao(x, y) = dy * mflux_face(x, y).east + dx * mflux_face(x, y).north + 
+	Ao(x, y) = dy * mflux_face(x, y).east + dx * mflux_face(x, y).north + 
 						vis_face(x, y).north * dxy + 3 * vis(x, y) * dxy + 
 						vis_face(x, y).east * dyx + 3 * vis(x, y) * dyx;
 
@@ -829,19 +997,19 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	x = nx - 1;
 	y = 0;
 
-	m_solver.Ae(x, y) = 0.0;
+	Ae(x, y) = 0.0;
 
 	mflux = rho_face(x, y).west * vel_face(x, y).west;
 	mflux_face(x, y).west = 0.5 * (abs(mflux) - mflux);
-	m_solver.Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx + vis(x, y) * dyx / 3;
+	Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx + vis(x, y) * dyx / 3;
 
 	mflux = rho_face(x, y).north * vel_face(x, y).north;
 	mflux_face(x, y).north = 0.5 * (abs(mflux) - mflux);
-	m_solver.An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy - vis(x, y) * dxy / 3;
+	An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy - vis(x, y) * dxy / 3;
 	
-	m_solver.As(x, y) = 0.0;
+	As(x, y) = 0.0;
 
-	m_solver.Ao(x, y) = dy * mflux_face(x, y).west + dx * mflux_face(x, y).north + 
+	Ao(x, y) = dy * mflux_face(x, y).west + dx * mflux_face(x, y).north + 
 						vis_face(x, y).north * dxy + 3 * vis(x, y) * dxy + 
 						vis_face(x, y).west * dyx + 3 * vis(x, y) * dyx;
 
@@ -854,17 +1022,17 @@ void Equation_NavierStokes::updateLinkCoefficient()
 
 	mflux = rho_face(x, y).east * vel_face(x, y).east;
 	mflux_face(x, y).east = 0.5 * (abs(mflux) - mflux);
-	m_solver.Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx - vis(x, y) * dyx / 3;
+	Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx - vis(x, y) * dyx / 3;
 
-	m_solver.Aw(x, y) = 0.0;
+	Aw(x, y) = 0.0;
 
-	m_solver.An(x, y) = 0.0;
+	An(x, y) = 0.0;
 
 	mflux = rho_face(x, y).south * vel_face(x, y).south;
 	mflux_face(x, y).south = 0.5 * (abs(mflux) - mflux);	
-	m_solver.As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
+	As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
 
-	m_solver.Ao(x, y) = dy * mflux_face(x, y).east + dx * mflux_face(x, y).south + 
+	Ao(x, y) = dy * mflux_face(x, y).east + dx * mflux_face(x, y).south + 
 						vis_face(x, y).east * dyx + vis_face(x, y).south * dxy +
 						3 * vis(x, y) * dyx;
 
@@ -875,19 +1043,19 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	x = nx - 1;
 	y = ny - 1;
 
-	m_solver.Ae(x, y) = 0.0;
+	Ae(x, y) = 0.0;
 
 	mflux = rho_face(x, y).west * vel_face(x, y).west;
 	mflux_face(x, y).west = 0.5 * (abs(mflux) - mflux);
-	m_solver.Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx + vis(x, y) * dyx / 3;
+	Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx + vis(x, y) * dyx / 3;
 
-	m_solver.An(x, y) = 0.0;
+	An(x, y) = 0.0;
 
 	mflux = rho_face(x, y).south * vel_face(x, y).south;
 	mflux_face(x, y).south = 0.5 * (abs(mflux) - mflux);	
-	m_solver.As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
+	As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
 
-	m_solver.Ao(x, y) = dy * mflux_face(x, y).west + dx * mflux_face(x, y).south + 
+	Ao(x, y) = dy * mflux_face(x, y).west + dx * mflux_face(x, y).south + 
 						vis_face(x, y).west * dyx + vis_face(x, y).south * dxy +
 						3 * vis(x, y) * dyx;
 
@@ -900,19 +1068,19 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	{
 		mflux = rho_face(x, y).east * vel_face(x, y).east;
 		mflux_face(x, y).east = 0.5 * (abs(mflux) - mflux);
-		m_solver.Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx;
+		Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx;
 
 		mflux = rho_face(x, y).west * vel_face(x, y).west;
 		mflux_face(x, y).west = 0.5 * (abs(mflux) - mflux);
-		m_solver.Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx;
+		Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx;
 
 		mflux = rho_face(x, y).north * vel_face(x, y).north;
 		mflux_face(x, y).north = 0.5 * (abs(mflux) - mflux);
-		m_solver.An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy - vis(x, y) * dxy / 3;
+		An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy - vis(x, y) * dxy / 3;
 		
-		m_solver.As(x, y) = 0.0;
+		As(x, y) = 0.0;
 
-		m_solver.Ao(x, y) = dy * mflux_face(x, y).east + 
+		Ao(x, y) = dy * mflux_face(x, y).east + 
 							dy * mflux_face(x, y).west + 
 							dx * mflux_face(x, y).north + 
 							vis_face(x, y).north * dxy + 
@@ -930,19 +1098,19 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	{
 		mflux = rho_face(x, y).east * vel_face(x, y).east;
 		mflux_face(x, y).east = 0.5 * (abs(mflux) - mflux);
-		m_solver.Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx;
+		Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx;
 
 		mflux = rho_face(x, y).west * vel_face(x, y).west;
 		mflux_face(x, y).west = 0.5 * (abs(mflux) - mflux);
-		m_solver.Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx;
+		Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx;
 
-		m_solver.An(x, y) = 0.0;
+		An(x, y) = 0.0;
 		
 		mflux = rho_face(x, y).south * vel_face(x, y).south;
 		mflux_face(x, y).south = 0.5 * (abs(mflux) - mflux);	
-		m_solver.As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
+		As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
 
-		m_solver.Ao(x, y) = dy * mflux_face(x, y).east + 
+		Ao(x, y) = dy * mflux_face(x, y).east + 
 							dy * mflux_face(x, y).west + 
 							dx * mflux_face(x, y).south + 
 							vis_face(x, y).south * dxy +
@@ -959,19 +1127,19 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	{
 		mflux = rho_face(x, y).east * vel_face(x, y).east;
 		mflux_face(x, y).east = 0.5 * (abs(mflux) - mflux);
-		m_solver.Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx - vis(x, y) * dyx / 3;
+		Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx - vis(x, y) * dyx / 3;
 
-		m_solver.Aw(x, y) = 0.0;
+		Aw(x, y) = 0.0;
 	
 		mflux = rho_face(x, y).north * vel_face(x, y).north;
 		mflux_face(x, y).north = 0.5 * (abs(mflux) - mflux);
-		m_solver.An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy;
+		An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy;
 
 		mflux = rho_face(x, y).south * vel_face(x, y).south;
 		mflux_face(x, y).south = 0.5 * (abs(mflux) - mflux);
-		m_solver.As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
+		As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
 
-		m_solver.Ao(x, y) = dy * mflux_face(x, y).east + 
+		Ao(x, y) = dy * mflux_face(x, y).east + 
 							dx * mflux_face(x, y).north + 
 							dx * mflux_face(x, y).south + 
 							vis_face(x, y).south * dxy +
@@ -987,21 +1155,21 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	x = nx - 1;
 	for (y = 1; y < ny - 1; y++)
 	{
-		m_solver.Ae(x, y) = 0.0;
+		Ae(x, y) = 0.0;
 
 		mflux = rho_face(x, y).west * vel_face(x, y).west;
 		mflux_face(x, y).west = 0.5 * (abs(mflux) - mflux);
-		m_solver.Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx + vis(x, y) * dyx / 3;
+		Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx + vis(x, y) * dyx / 3;
 		
 		mflux = rho_face(x, y).north * vel_face(x, y).north;
 		mflux_face(x, y).north = 0.5 * (abs(mflux) - mflux);
-		m_solver.An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy;
+		An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy;
 
 		mflux = rho_face(x, y).south * vel_face(x, y).south;
 		mflux_face(x, y).south = 0.5 * (abs(mflux) - mflux);
-		m_solver.As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
+		As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
 
-		m_solver.Ao(x, y) = dy * mflux_face(x, y).west + 
+		Ao(x, y) = dy * mflux_face(x, y).west + 
 							dx * mflux_face(x, y).north + 
 							dx * mflux_face(x, y).south + 
 							vis_face(x, y).south * dxy +
@@ -1021,21 +1189,21 @@ void Equation_NavierStokes::updateLinkCoefficient()
 		{
 			mflux = rho_face(x, y).east * vel_face(x, y).east;
 			mflux_face(x, y).east = 0.5 * (abs(mflux) - mflux);
-			m_solver.Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx;
+			Ae(x, y) = -dy * mflux_face(x, y).east - vis_face(x, y).east * dyx;
 
 			mflux = rho_face(x, y).west * vel_face(x, y).west;
 			mflux_face(x, y).west = 0.5 * (abs(mflux) - mflux);
-			m_solver.Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx;
+			Aw(x, y) = -dy * mflux_face(x, y).west - vis_face(x, y).west * dyx;
 			
 			mflux = rho_face(x, y).north * vel_face(x, y).north;
 			mflux_face(x, y).north = 0.5 * (abs(mflux) - mflux);
-			m_solver.An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy;
+			An(x, y) = -dx * mflux_face(x, y).north - vis_face(x, y).north * dxy;
 
 			mflux = rho_face(x, y).south * vel_face(x, y).south;
 			mflux_face(x, y).south = 0.5 * (abs(mflux) - mflux);
-			m_solver.As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
+			As(x, y) = -dx * mflux_face(x, y).south - vis_face(x, y).south * dxy;
 
-			m_solver.Ao(x, y) = mflux_face(x, y).east + mflux_face(x, y).west +
+			Ao(x, y) = mflux_face(x, y).east + mflux_face(x, y).west +
 								mflux_face(x, y).north +  mflux_face(x, y).south + 
 								vis_face(x, y).east * dyx + vis_face(x, y).west * dyx +
 								vis_face(x, y).north * dxy + vis_face(x, y).south * dxy;
