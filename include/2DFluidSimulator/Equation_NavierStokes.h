@@ -1,4 +1,5 @@
 #include "IEquation.h"
+#include "Eigen/Dense"
 
 class Equation_NavierStokes : public IEquation
 {
@@ -49,13 +50,14 @@ private:
 	double res_p;
 
 	// Tuning parameters
-	double p_scalar = 0.2;
-	double vel_scalar = 0.8;
+	double p_relax = 0.2;
+	double vel_relax = 0.8;
+	double tolerance = 1e-8;
 
 	// Other
 	int nx{};
 	int ny{};
-	double u_lid{};
+	double u_lid = 1;
 
 private:
 	void updateLinkCoefficient();
@@ -63,6 +65,7 @@ private:
 	void updatePressureLinks();
 	void updateVelocityCorrection();
 	void correctVelocityAndPressure();
+	bool isConverged();
 
 };
 

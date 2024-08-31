@@ -4,7 +4,6 @@
 #include "2DFluidSimulator/Mesh.h"
 #include "Eigen/Dense"
 
-
 class IEquation
 {
 public:

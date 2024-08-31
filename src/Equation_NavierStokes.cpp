@@ -1,4 +1,5 @@
 #include "2DFluidSimulator/Equation_NavierStokes.h"
+#include <iostream>
 
 
 void Equation_NavierStokes::initialiseEquation(int numberOfXCells, int numberOfYCells)
@@ -84,10 +85,38 @@ void Equation_NavierStokes::update()
 		correctVelocityAndPressure();
 
 		// Check for overall convergance
-		// hasConverged = isConverged();
+		hasConverged = isConverged();
 
 		itt++;
 	}
+
+	if (hasConverged)
+	{
+		std::cout << "Solution has converged in " << itt << "itterations.\n";
+		std::cout << "U_x residual:\t" << res_u << "\n";
+		std::cout << "U_y residual:\t" << res_v << "\n";
+		std::cout << "P residual:\t" << res_p << "\n";
+	}
+	else
+	{
+		std::cout << "Solution could not converge after " << itt << "itterations.\n";
+		std::cout << "Consider increasing the maximum number of itterations, or reducing your tolerance.\n";
+	}
+}
+
+
+bool Equation_NavierStokes::isConverged()
+{
+	res_u = m_solver.getResidual(u, Ao, Ae, Aw, An, As, Sp_x);
+	res_v = m_solver.getResidual(v, Ao, Ae, Aw, An, As, Sp_y);
+	res_p = m_solver.getResidual(p_c, Ap_o, Ap_e, Ap_w, Ap_n, Ap_s, Sp);
+
+	if (res_u > tolerance || res_v > tolerance || res_p > tolerance)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 
@@ -1269,13 +1298,13 @@ void Equation_NavierStokes::correctVelocityAndPressure()
 	{
 		for (int y = 0; y < ny; ++y)
 		{
-			p(x, y) = p(x, y) + p_scalar * p_c(x, y);
-			u(x, y) = u(x, y) + vel_scalar * u_c(x, y);
-			v(x, y) = v(x, y) + vel_scalar * v_c(x, y);
-			vel_face(x, y).east = vel_face(x, y).east + vel_scalar * vel_c_face(x, y).east;
-			vel_face(x, y).west = vel_face(x, y).west + vel_scalar * vel_c_face(x, y).west;
-			vel_face(x, y).north = vel_face(x, y).north + vel_scalar * vel_c_face(x, y).north;
-			vel_face(x, y).south = vel_face(x, y).south + vel_scalar * vel_c_face(x, y).south;
+			p(x, y) = p(x, y) + p_relax * p_c(x, y);
+			u(x, y) = u(x, y) + vel_relax * u_c(x, y);
+			v(x, y) = v(x, y) + vel_relax * v_c(x, y);
+			vel_face(x, y).east = vel_face(x, y).east + vel_relax * vel_c_face(x, y).east;
+			vel_face(x, y).west = vel_face(x, y).west + vel_relax * vel_c_face(x, y).west;
+			vel_face(x, y).north = vel_face(x, y).north + vel_relax * vel_c_face(x, y).north;
+			vel_face(x, y).south = vel_face(x, y).south + vel_relax * vel_c_face(x, y).south;
 		}
 	}
 }

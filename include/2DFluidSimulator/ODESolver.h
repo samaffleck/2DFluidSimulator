@@ -16,30 +16,18 @@ public:
 		const Eigen::MatrixXd& An,
 		const Eigen::MatrixXd& As,
 		const Eigen::MatrixXd& S);
-
-	//Eigen::MatrixXd Ao{};
-	//Eigen::MatrixXd Ae{};
-	//Eigen::MatrixXd Aw{};
-	//Eigen::MatrixXd An{};
-	//Eigen::MatrixXd As{};
-	//Eigen::MatrixXd S{};
-	//
-	//Eigen::MatrixXd Ap_o{};
-	//Eigen::MatrixXd Ap_e{};
-	//Eigen::MatrixXd Ap_w{};
-	//Eigen::MatrixXd Ap_n{};
-	//Eigen::MatrixXd Ap_s{};
-	//Eigen::MatrixXd Sp{};
-
-	double leftBoundary{};
-	double rightBoundary{};
-	double topBoundary{};
-	double bottomBoundary{};
+	double getResidual(const Eigen::MatrixXd& var,
+		const Eigen::MatrixXd& Ao,
+		const Eigen::MatrixXd& Ae,
+		const Eigen::MatrixXd& Aw,
+		const Eigen::MatrixXd& An,
+		const Eigen::MatrixXd& As,
+		const Eigen::MatrixXd& S);
 
 private:
-	double m_tolerance = 1e-6;
-	int nx, ny;
-	double ve, vw, vn, vs;
+	double m_tolerance = 1e-4;
+	int nx{}, ny{};
+	double ve{}, vw{}, vn{}, vs{};
 	
 private:
 	void update(Eigen::MatrixXd& var, 
@@ -49,13 +37,8 @@ private:
 		const Eigen::MatrixXd& An,
 		const Eigen::MatrixXd& As,
 		const Eigen::MatrixXd& S);
-	double getResidual(const Eigen::MatrixXd& var,
-		const Eigen::MatrixXd& Ao,
-		const Eigen::MatrixXd& Ae,
-		const Eigen::MatrixXd& Aw,
-		const Eigen::MatrixXd& An,
-		const Eigen::MatrixXd& As,
-		const Eigen::MatrixXd& S);
-	void setNeighbourCells(const Eigen::MatrixXd& var, int x, int y);
+	void setNeighbourCells(const Eigen::MatrixXd& var, 
+		int x, 
+		int y);
 
 };
