@@ -2,8 +2,7 @@
 
 #include "2DFluidSimulator/Domain.h"
 #include "2DFluidSimulator/Equation_Diffusion.h"
-#include "imgui/imgui.h"
-
+#include "2DFluidSimulator/Equation_NavierStokes.h"
 
 int main() 
 {
@@ -13,12 +12,13 @@ int main()
 	domain.getMesh().setDomainLengthX(1);
 	domain.getMesh().setDomainLengthY(1);
 
-	auto diffusion = std::make_unique<Equation_Diffusion>();
-	domain.addEquation(std::move(diffusion));
+	//auto diffusion = std::make_unique<Equation_Diffusion>();
+	//domain.addEquation(std::move(diffusion));
 
-	ImGui::ShowDemoWindow();
+	auto ns = std::make_unique<Equation_NavierStokes>();
+	domain.addEquation(std::move(ns));
 
-	//domain.run();
+	domain.run();
 
 	return 0;
 }
