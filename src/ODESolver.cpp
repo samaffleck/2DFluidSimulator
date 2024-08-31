@@ -20,8 +20,9 @@ void ODESolver::solve(Eigen::MatrixXd& var,
 	// Gauss-seidel method
 	double error = getResidual(var, Ao, Ae, Aw, An, As, S);
 	int itterations = 0;
+	int maxItterations = 1000;
 
-	while (error > m_tolerance)
+	while (error > m_tolerance && itterations < maxItterations)
 	{
 		update(var, Ao, Ae, Aw, An, As, S);
 		error = getResidual(var, Ao, Ae, Aw, An, As, S);
@@ -59,7 +60,7 @@ double ODESolver::getResidual(const Eigen::MatrixXd& var,
 	const Eigen::MatrixXd& As,
 	const Eigen::MatrixXd& S)
 {
-	auto res = var; // Create a copy to write the error to
+	auto res = var; // Create a matrix of the same size to store the error
 
 	for (int x = 0; x < nx; ++x)
 	{
@@ -93,11 +94,11 @@ void ODESolver::setNeighbourCells(const Eigen::MatrixXd& var, int x, int y)
 
 	if (y < ny - 1) // not at the top boundary
 	{
-		ve = var(x, y + 1);
+		vn = var(x, y + 1);
 	}
 
 	if (y > 0) // not at the bottom boundary
 	{
-		vw = var(x, y - 1);
+		vs = var(x, y - 1);
 	}
 }

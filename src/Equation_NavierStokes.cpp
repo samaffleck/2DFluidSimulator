@@ -1,5 +1,8 @@
 #include "2DFluidSimulator/Equation_NavierStokes.h"
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <filesystem>
 
 
 void Equation_NavierStokes::initialiseEquation(int numberOfXCells, int numberOfYCells)
@@ -7,10 +10,10 @@ void Equation_NavierStokes::initialiseEquation(int numberOfXCells, int numberOfY
 	nx = numberOfXCells;
 	ny = numberOfYCells;
 	
-	double viscosity = 1e-5;
-	double density = 1.0;
+	double viscosity = 1e-3;
+	double density = 1000.0;
 	double initialPressure = 0.0;
-	double initialXVelocity = 1.0;
+	double initialXVelocity = 0.0;
 	double initialYVelocity = 0.0;
 
 	u.setConstant(nx, ny, initialXVelocity);
@@ -114,7 +117,48 @@ void Equation_NavierStokes::update()
 
 void Equation_NavierStokes::logData(std::string resultsDirectory)
 {
-	// TODO
+	std::filesystem::path xVelocityFilePath = std::filesystem::path(resultsDirectory) / "x-velocity.csv";
+	std::filesystem::path yVelocityFilePath = std::filesystem::path(resultsDirectory) / "y-velocity.csv";
+	std::filesystem::path pressureFilePath = std::filesystem::path(resultsDirectory) / "Pressure.csv";
+
+	std::ofstream xVelocityFile(xVelocityFilePath);
+	std::ofstream yVelocityFile(yVelocityFilePath);
+	std::ofstream pressureFile(pressureFilePath);
+
+	if (!xVelocityFile.is_open()) 
+	{
+		std::cout << "Failed to open file: " << xVelocityFilePath << std::endl;
+		return;
+	}
+
+	if (!yVelocityFile.is_open())
+	{
+		std::cout << "Failed to open file: " << yVelocityFilePath << std::endl;
+		return;
+	}
+
+	if (!pressureFile.is_open())
+	{
+		std::cout << "Failed to open file: " << pressureFilePath << std::endl;
+		return;
+	}
+
+	for (int y = ny - 1; y >= 0; y--)
+	{
+		for (int x = 0; x < nx; ++x)
+		{
+			xVelocityFile << u(x, y) << ",";
+			yVelocityFile << v(x, y) << ",";
+			pressureFile << p(x, y) << ",";
+		}
+		xVelocityFile << std::endl;
+		yVelocityFile << std::endl;
+		pressureFile << std::endl;
+	}
+
+	xVelocityFile.close();
+	yVelocityFile.close();
+	pressureFile.close();
 }
 
 
