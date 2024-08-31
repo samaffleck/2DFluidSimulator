@@ -30,7 +30,7 @@ public:
 	double bottomBoundary{};
 
 private:
-	double m_tolerance = 1e-4;
+	double m_tolerance = 1e-8;
 	int nx{}, ny{};
 	double ve{}, vw{}, vn{}, vs{};
 	
