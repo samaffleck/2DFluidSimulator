@@ -24,6 +24,11 @@ public:
 		const Eigen::MatrixXd& As,
 		const Eigen::MatrixXd& S);
 
+	double leftBoundary{};
+	double rightBoundary{};
+	double topBoundary{};
+	double bottomBoundary{};
+
 private:
 	double m_tolerance = 1e-4;
 	int nx{}, ny{};

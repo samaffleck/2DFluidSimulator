@@ -11,12 +11,20 @@ void Equation_Diffusion::initialiseEquation(int numberOfXCells, int numberOfYCel
 	m_numberOfXCells = numberOfXCells;
 	m_numberOfYCells = numberOfYCells;
 
-	v.setConstant(numberOfXCells * numberOfYCells, 0);
+	v.setConstant(numberOfXCells, numberOfYCells, 0);
+	Ao.setConstant(numberOfXCells, numberOfYCells, 0);
+	Ae.setConstant(numberOfXCells, numberOfYCells, 0);
+	Aw.setConstant(numberOfXCells, numberOfYCells, 0);
+	An.setConstant(numberOfXCells, numberOfYCells, 0);
+	As.setConstant(numberOfXCells, numberOfYCells, 0);
+	S.setConstant(numberOfXCells, numberOfYCells, 0);
 }
+
 
 void Equation_Diffusion::update()
 {
-	int N = m_numberOfXCells * m_numberOfYCells;
+	int nx = m_numberOfXCells;
+	int ny = m_numberOfYCells;
 
 	double dx = p_mesh->getCells()[0][0].dx;
 	double dy = p_mesh->getCells()[0][0].dy;
@@ -24,21 +32,23 @@ void Equation_Diffusion::update()
 	double dy_squared_inv = 1 / (dy * dy);
 
 	// Update link coefficients
-	for (int n = 0; n < N; ++n)
+	for (int x = 0; x < nx; ++x)
 	{
-		m_solver.Ao[n] = 2 * dx_squared_inv + 2 * dy_squared_inv;
-		m_solver.Ae[n] = - dx_squared_inv; //
-		m_solver.Aw[n] = - dx_squared_inv; //
-		m_solver.An[n] = - dy_squared_inv; //
-		m_solver.As[n] = - dy_squared_inv; //
-		m_solver.S[n] = 0.0; //
+		for (int y = 0; y < ny; ++y)
+		{
+			Ao(x, y) = 2 * dx_squared_inv + 2 * dy_squared_inv;
+			Ae(x, y) = -dx_squared_inv; //
+			Aw(x, y) = -dx_squared_inv; //
+			An(x, y) = -dy_squared_inv; //
+			As(x, y) = -dy_squared_inv; //
+			S(x, y) = 0.0; //
+		}
 	}
-
-	// Apply boundary conditions?
 	
 	// Solve the equation
-	m_solver.solve(v);
+	m_solver.solve(v, Ao, Ae, Aw, An, As, S);
 }
+
 
 void Equation_Diffusion::logData(std::string resultsDirectory)
 {
@@ -55,7 +65,7 @@ void Equation_Diffusion::logData(std::string resultsDirectory)
 	{
 		for (int x = 0; x < m_numberOfXCells; ++x)
 		{
-			file << v[x + y * m_numberOfXCells] << ",";
+			file << v(x, y) << ",";
 		}
 		file << std::endl;
 	}

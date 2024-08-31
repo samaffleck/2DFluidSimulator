@@ -19,6 +19,6 @@ int main()
 	domain.addEquation(std::move(ns));
 
 	domain.run();
-
+	 
 	return 0;
 }

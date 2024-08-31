@@ -14,11 +14,20 @@ public:
 	double D = 1e-5;				// Diffusion coefficient
 
 public:
-	Eigen::VectorXd& getV() { return v; }
+	Eigen::MatrixXd& getV() { return v; }
 
 private:
-	Eigen::VectorXd v{};	// Scalar field, e.g. Temperature
-	int m_numberOfXCells;
-	int m_numberOfYCells;
+	Eigen::MatrixXd v{};	// Scalar field, e.g. Temperature
+	
+	// Link coefficients
+	Eigen::MatrixXd Ao{};
+	Eigen::MatrixXd Ae{};
+	Eigen::MatrixXd Aw{};
+	Eigen::MatrixXd An{};
+	Eigen::MatrixXd As{};
+	Eigen::MatrixXd S{};		
+
+	int m_numberOfXCells{};
+	int m_numberOfYCells{};
 
 };

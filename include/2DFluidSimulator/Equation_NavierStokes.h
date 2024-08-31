@@ -4,12 +4,11 @@
 class Equation_NavierStokes : public IEquation
 {
 public:
-
 	void initialiseEquation(int numberOfXCells, int numberOfYCells) override;
 	void update() override;
+	void logData(std::string resultsDirectory) override;
 
 private:
-
 	// Cell center values
 	Eigen::MatrixXd u{};		// Vecloity in x-direction
 	Eigen::MatrixXd u_c{};		// Vecloity correction in x-direction
