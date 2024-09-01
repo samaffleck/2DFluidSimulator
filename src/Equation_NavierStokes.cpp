@@ -76,10 +76,10 @@ void Equation_NavierStokes::update()
 		updateLinkCoefficient();
 
 		// solve x-momentum
-		m_solver.solve(u, Ao, Ae, Aw, An, As, Sp_x);
+		m_solver.solve(u, Ao, Ae, Aw, An, As, Sp_x, 5.0);
 
 		// solve y-momentum
-		m_solver.solve(v, Ao, Ae, Aw, An, As, Sp_y);
+		m_solver.solve(v, Ao, Ae, Aw, An, As, Sp_y, 5.0);
 
 		// Calculate the face velocities using PWIM
 		updateFaceVelocities();
@@ -98,6 +98,7 @@ void Equation_NavierStokes::update()
 		hasConverged = isConverged();
 
 		itt++;
+		logVelocity();
 	}
 
 	if (hasConverged)
@@ -112,6 +113,43 @@ void Equation_NavierStokes::update()
 		std::cout << "Solution could not converge after " << itt << "itterations.\n";
 		std::cout << "Consider increasing the maximum number of itterations, or reducing your tolerance.\n";
 	}
+}
+
+
+void Equation_NavierStokes::logVelocity()
+{
+	std::cout << "x-veloctiy\n";
+	for (int y = nx - 1; y >= 0; --y)
+	{
+		for (int x = 0; x < nx; ++x)
+		{
+			std::cout << u(x, y) << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	std::cout << "y-veloctiy\n";
+	for (int y = nx - 1; y >= 0; --y)
+	{
+		for (int x = 0; x < nx; ++x)
+		{
+			std::cout << v(x, y) << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	std::cout << "pressure\n";
+	for (int y = nx - 1; y >= 0; --y)
+	{
+		for (int x = 0; x < nx; ++x)
+		{
+			std::cout << p(x, y) << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
 }
 
 
@@ -1383,16 +1421,14 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	
 	mflux_face(x, y).east = rho_face(x, y).east * vel_face(x, y).east;
 	Ae(x, y) = -0.5 * dy * (abs(mflux_face(x, y).east) - mflux_face(x, y).east) -
-		vis_face(x, y).east * dyx - 
-		vis(x, y) * dyx / 3;
+		vis_face(x, y).east * dyx;
 
 	mflux_face(x, y).west = 0.0;
 	Aw(x, y) = 0.0;
 
 	mflux_face(x, y).north = rho_face(x, y).north * vel_face(x, y).north;
 	An(x, y) = -0.5 * dx * (abs(mflux_face(x, y).north) - mflux_face(x, y).north) -
-		vis_face(x, y).north * dxy - 
-		vis(x, y) * dxy / 3;
+		vis_face(x, y).north * dxy;
 
 	mflux_face(x, y).south = 0.0;
 	As(x, y) = 0.0;
@@ -1400,9 +1436,9 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	Ao(x, y) = 0.5 * dy * (abs(mflux_face(x, y).east) + mflux_face(x, y).east) +
 		0.5 * dx * (abs(mflux_face(x, y).north) + mflux_face(x, y).north) +
 		vis_face(x, y).east * dyx +
-		vis_face(x, y).north * dxy +
-		3 * vis(x, y) * dxy + 
-		3 * vis(x, y) * dyx;
+		2 * vis_face(x, y).west * dxy +
+		vis_face(x, y).north * dxy + 
+		2 * vis_face(x, y).south * dyx;
 
 	Sp_x(x, y) = 0.5 * dy * (p(x, y) - p(x + 1, y));
 	Sp_y(x, y) = 0.5 * dx * (p(x, y) - p(x, y + 1));
@@ -1416,23 +1452,21 @@ void Equation_NavierStokes::updateLinkCoefficient()
 
 	mflux_face(x, y).west = rho_face(x, y).west * vel_face(x, y).west;
 	Aw(x, y) = -0.5 * dy * (abs(mflux_face(x, y).west) + mflux_face(x, y).west) -
-		vis_face(x, y).west * dyx + 
-		vis(x, y) * dyx / 3;
+		vis_face(x, y).west * dyx;
 
 	mflux_face(x, y).north = rho_face(x, y).north * vel_face(x, y).north;
 	An(x, y) = -0.5 * dx * (abs(mflux_face(x, y).north) - mflux_face(x, y).north) -
-		vis_face(x, y).north * dxy - 
-		vis(x, y) * dxy / 3;
+		vis_face(x, y).north * dxy;
 
 	mflux_face(x, y).south = 0.0;
 	As(x, y) = 0.0;
 
 	Ao(x, y) = 0.5 * dy * (abs(mflux_face(x, y).west) - mflux_face(x, y).west) +
 		0.5 * dx * (abs(mflux_face(x, y).north) + mflux_face(x, y).north) +
+		2 * vis_face(x, y).east * dxy + 
 		vis_face(x, y).west * dyx +
 		vis_face(x, y).north * dxy +
-		3 * vis(x, y) * dxy +
-		3 * vis(x, y) * dyx;
+		2 * vis_face(x, y).south * dyx;
 	
 	Sp_x(x, y) = 0.5 * dy * (p(x - 1, y) - p(x, y));
 	Sp_y(x, y) = 0.5 * dx * (p(x, y) - p(x, y + 1));
@@ -1443,8 +1477,7 @@ void Equation_NavierStokes::updateLinkCoefficient()
 
 	mflux_face(x, y).east = rho_face(x, y).east * vel_face(x, y).east;
 	Ae(x, y) = -0.5 * dy * (abs(mflux_face(x, y).east) - mflux_face(x, y).east) -
-		vis_face(x, y).east * dyx - 
-		vis(x, y) * dyx / 3;
+		vis_face(x, y).east * dyx;
 
 	mflux_face(x, y).west = 0.0;
 	Aw(x, y) = 0.0;
@@ -1459,11 +1492,12 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	Ao(x, y) = 0.5 * dy * (abs(mflux_face(x, y).east) + mflux_face(x, y).east) +
 		0.5 * dx * (abs(mflux_face(x, y).south) - mflux_face(x, y).south) +
 		vis_face(x, y).east * dyx +
-		vis_face(x, y).south * dxy + 
-		3 * vis(x, y) * dyx;
+		2 * vis_face(x, y).west * dyx +
+		2 * vis_face(x, y).north * dxy +
+		vis_face(x, y).south * dxy;
 
-	Sp_x(x, y) = 0.5 * dy * (p(x, y) - p(x + 1, y));
-	Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y)) + u_lid * vis(x, y) * dxy;
+	Sp_x(x, y) = 0.5 * dy * (p(x, y) - p(x + 1, y)) + 2 * u_lid * vis_face(x, y).north * dxy;
+	Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y));
 
 	// TOP RIGHT CORNER
 	x = nx - 1;
@@ -1474,8 +1508,7 @@ void Equation_NavierStokes::updateLinkCoefficient()
 
 	mflux_face(x, y).west = rho_face(x, y).west * vel_face(x, y).west;
 	Aw(x, y) = -0.5 * dy * (abs(mflux_face(x, y).west) + mflux_face(x, y).west) -
-		vis_face(x, y).west * dyx + 
-		vis(x, y) * dyx / 3;
+		vis_face(x, y).west * dyx;
 
 	mflux_face(x, y).north = 0.0;
 	An(x, y) = 0.0;
@@ -1486,12 +1519,13 @@ void Equation_NavierStokes::updateLinkCoefficient()
 
 	Ao(x, y) = 0.5 * dy * (abs(mflux_face(x, y).west) - mflux_face(x, y).west) +
 		0.5 * dx * (abs(mflux_face(x, y).south) - mflux_face(x, y).south) +
+		2 * vis_face(x, y).east * dyx +
 		vis_face(x, y).west * dyx +
-		vis_face(x, y).south * dxy + 
-		3 * vis(x, y) * dyx;
+		vis_face(x, y).south * dxy +  
+		2 * vis_face(x, y).north * dxy;
 
-	Sp_x(x, y) = 0.5 * dy * (p(x - 1, y) - p(x, y));
-	Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y)) + u_lid * vis(x, y) * dxy;
+	Sp_x(x, y) = 0.5 * dy * (p(x - 1, y) - p(x, y)) + 2 * u_lid * vis_face(x, y).north * dxy;
+	Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y));
 
 	// BOTTOM FACE
 	y = 0;
@@ -1507,8 +1541,7 @@ void Equation_NavierStokes::updateLinkCoefficient()
 
 		mflux_face(x, y).north = rho_face(x, y).north * vel_face(x, y).north;
 		An(x, y) = -0.5 * dx * (abs(mflux_face(x, y).north) - mflux_face(x, y).north) -
-			vis_face(x, y).north * dxy - 
-			vis(x, y) * dxy / 3;
+			vis_face(x, y).north * dxy;
 
 		mflux_face(x, y).south = 0.0;
 		As(x, y) = 0.0;
@@ -1519,7 +1552,7 @@ void Equation_NavierStokes::updateLinkCoefficient()
 			vis_face(x, y).east * dyx +
 			vis_face(x, y).west * dyx +
 			vis_face(x, y).north * dxy +
-			3 * vis(x, y) * dxy;
+			2 * vis_face(x, y).south * dxy;
 
 		Sp_x(x, y) = 0.5 * dy * (p(x - 1, y) - p(x + 1, y));
 		Sp_y(x, y) = 0.5 * dx * (p(x, y) - p(x, y + 1));
@@ -1549,10 +1582,11 @@ void Equation_NavierStokes::updateLinkCoefficient()
 			0.5 * dx * (abs(mflux_face(x, y).south) - mflux_face(x, y).south) +
 			vis_face(x, y).east * dyx +
 			vis_face(x, y).west * dyx +
+			2 * vis_face(x, y).north * dxy +
 			vis_face(x, y).south * dxy;
 
-		Sp_x(x, y) = 0.5 * dy * (p(x - 1, y) - p(x + 1, y));
-		Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y)) + u_lid * vis(x, y) * dxy;
+		Sp_x(x, y) = 0.5 * dy * (p(x - 1, y) - p(x + 1, y)) + 2 * u_lid * vis_face(x, y).north * dxy;
+		Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y));
 	}
 
 	// LEFT FACE
@@ -1561,8 +1595,7 @@ void Equation_NavierStokes::updateLinkCoefficient()
 	{
 		mflux_face(x, y).east = rho_face(x, y).east * vel_face(x, y).east;
 		Ae(x, y) = -0.5 * dy * (abs(mflux_face(x, y).east) - mflux_face(x, y).east) -
-			vis_face(x, y).east * dyx - 
-			vis(x, y) * dyx / 3;
+			vis_face(x, y).east * dyx;
 
 		mflux_face(x, y).west = 0.0;
 		Aw(x, y) = 0.0;
@@ -1579,9 +1612,9 @@ void Equation_NavierStokes::updateLinkCoefficient()
 			0.5 * dx * (abs(mflux_face(x, y).north) + mflux_face(x, y).north) +
 			0.5 * dx * (abs(mflux_face(x, y).south) - mflux_face(x, y).south) +
 			vis_face(x, y).east * dyx +
+			2 * vis_face(x, y).west * dyx +
 			vis_face(x, y).north * dxy +
-			vis_face(x, y).south * dxy +
-			3 * vis(x, y) * dyx;
+			vis_face(x, y).south * dxy;
 
 		Sp_x(x, y) = 0.5 * dy * (p(x, y) - p(x + 1, y));
 		Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y + 1));
@@ -1596,8 +1629,7 @@ void Equation_NavierStokes::updateLinkCoefficient()
 
 		mflux_face(x, y).west = rho_face(x, y).west * vel_face(x, y).west;
 		Aw(x, y) = -0.5 * dy * (abs(mflux_face(x, y).west) + mflux_face(x, y).west) -
-			vis_face(x, y).west * dyx + 
-			vis(x, y) * dyx / 3;
+			vis_face(x, y).west * dyx;
 
 		mflux_face(x, y).north = rho_face(x, y).north * vel_face(x, y).north;
 		An(x, y) = -0.5 * dx * (abs(mflux_face(x, y).north) - mflux_face(x, y).north) -
@@ -1610,10 +1642,10 @@ void Equation_NavierStokes::updateLinkCoefficient()
 		Ao(x, y) = 0.5 * dy * (abs(mflux_face(x, y).west) - mflux_face(x, y).west) +
 			0.5 * dx * (abs(mflux_face(x, y).north) + mflux_face(x, y).north) +
 			0.5 * dx * (abs(mflux_face(x, y).south) - mflux_face(x, y).south) +
+			2 * vis_face(x, y).east * dyx + 
 			vis_face(x, y).west * dyx +
 			vis_face(x, y).north * dxy +
-			vis_face(x, y).south * dxy + // Not sure if this should be a + or -. Maths says it is a -, bit that causes problems with divide by 0...
-			3 * vis(x, y) * dyx;
+			vis_face(x, y).south * dxy;
 
 		Sp_x(x, y) = 0.5 * dy * (p(x - 1, y) - p(x, y));
 		Sp_y(x, y) = 0.5 * dx * (p(x, y - 1) - p(x, y + 1));

@@ -15,12 +15,14 @@ void ODESolver::solve(Eigen::MatrixXd& var,
 	const Eigen::MatrixXd& Aw,
 	const Eigen::MatrixXd& An,
 	const Eigen::MatrixXd& As,
-	const Eigen::MatrixXd& S)
+	const Eigen::MatrixXd& S, 
+	double damping_factor)
 {
 	// Gauss-seidel method
-	double error = getResidual(var, Ao, Ae, Aw, An, As, S);
+	double error = 10 * m_tolerance; //getResidual(var, Ao, Ae, Aw, An, As, S);
 	int itterations = 0;
 	int maxItterations = 1000;
+	m_damping_factor = damping_factor;
 
 	while (error > m_tolerance && itterations < maxItterations)
 	{
@@ -41,12 +43,14 @@ void ODESolver::update(Eigen::MatrixXd& var,
 	const Eigen::MatrixXd& As,
 	const Eigen::MatrixXd& S)
 {
+	auto var_old = var;
+
 	for (int x = 0; x < nx; ++x)
 	{
 		for (int y = 0; y < ny; ++y)
 		{
 			setNeighbourCells(var, x, y);
-			var(x, y) = (-1 / Ao(x, y)) * (Ae(x, y) * ve + Aw(x, y) * vw + An(x, y) * vn + As(x, y) * vs - S(x, y));
+			var(x, y) = (-1 / ((1 + m_damping_factor) * Ao(x, y))) * (Ae(x, y) * ve + Aw(x, y) * vw + An(x, y) * vn + As(x, y) * vs - S(x, y) - m_damping_factor * Ao(x, y) * var_old(x, y));
 		}
 	}
 }
@@ -71,7 +75,7 @@ double ODESolver::getResidual(const Eigen::MatrixXd& var,
 		}
 	}
 
-	return res.norm();
+	return res.norm() / sqrt(nx * ny);
 }
 
 

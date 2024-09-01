@@ -56,7 +56,7 @@ private:
 	// Other
 	int nx{};
 	int ny{};
-	double u_lid = 1;
+	double u_lid = 0.01;
 
 private:
 	void updateLinkCoefficient();
@@ -65,6 +65,7 @@ private:
 	void updateVelocityCorrection();
 	void correctVelocityAndPressure();
 	bool isConverged();
+	void logVelocity();
 
 };
 

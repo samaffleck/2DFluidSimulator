@@ -15,7 +15,8 @@ public:
 		const Eigen::MatrixXd& Aw,
 		const Eigen::MatrixXd& An,
 		const Eigen::MatrixXd& As,
-		const Eigen::MatrixXd& S);
+		const Eigen::MatrixXd& S,
+		double damping_factor = 0.0);
 	double getResidual(const Eigen::MatrixXd& var,
 		const Eigen::MatrixXd& Ao,
 		const Eigen::MatrixXd& Ae,
@@ -33,6 +34,7 @@ private:
 	double m_tolerance = 1e-3;
 	int nx{}, ny{};
 	double ve{}, vw{}, vn{}, vs{};
+	int m_damping_factor{};
 	
 private:
 	void update(Eigen::MatrixXd& var, 
