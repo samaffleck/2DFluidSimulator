@@ -31,7 +31,7 @@ public:
 	double bottomBoundary{};
 
 private:
-	double m_tolerance = 1e-3;
+	double m_tolerance = 1e-4;
 	int nx{}, ny{};
 	double ve{}, vw{}, vn{}, vs{};
 	int m_damping_factor{};

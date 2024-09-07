@@ -51,12 +51,12 @@ private:
 	// Tuning parameters
 	double p_relax = 0.2;
 	double vel_relax = 0.8;
-	double tolerance = 1e-8;
+	double tolerance = 1e-7;
 
 	// Other
 	int nx{};
 	int ny{};
-	double u_lid = 0.01;
+	double u_lid = 0.05;
 
 private:
 	void updateLinkCoefficient();

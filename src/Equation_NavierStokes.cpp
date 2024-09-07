@@ -11,7 +11,7 @@ void Equation_NavierStokes::initialiseEquation(int numberOfXCells, int numberOfY
 	ny = numberOfYCells;
 	
 	double viscosity = 1e-3;
-	double density = 1000.0;
+	double density = 1.0;
 	double initialPressure = 0.0;
 	double initialXVelocity = 0.0;
 	double initialYVelocity = 0.0;
@@ -67,7 +67,7 @@ void Equation_NavierStokes::initialiseEquation(int numberOfXCells, int numberOfY
 void Equation_NavierStokes::update()
 {
 	int itt = 0;
-	int maxItterations = 2e5;
+	int maxItterations = 200;
 	bool hasConverged = false;
 
 	while (!hasConverged && itt < maxItterations)
@@ -76,10 +76,10 @@ void Equation_NavierStokes::update()
 		updateLinkCoefficient();
 
 		// solve x-momentum
-		m_solver.solve(u, Ao, Ae, Aw, An, As, Sp_x, 5.0);
+		m_solver.solve(u, Ao, Ae, Aw, An, As, Sp_x);
 
 		// solve y-momentum
-		m_solver.solve(v, Ao, Ae, Aw, An, As, Sp_y, 5.0);
+		m_solver.solve(v, Ao, Ae, Aw, An, As, Sp_y);
 
 		// Calculate the face velocities using PWIM
 		updateFaceVelocities();
@@ -98,26 +98,26 @@ void Equation_NavierStokes::update()
 		hasConverged = isConverged();
 
 		itt++;
-		logVelocity();
+		//logVelocity();
 	}
 
 	if (hasConverged)
 	{
-		std::cout << "Solution has converged in " << itt << "itterations.\n";
+		std::cout << "Solution has converged in: \t" << itt << " itteration(s).\n";
 		std::cout << "U_x residual:\t" << res_u << "\n";
 		std::cout << "U_y residual:\t" << res_v << "\n";
 		std::cout << "P residual:\t" << res_p << "\n";
 	}
 	else
 	{
-		std::cout << "Solution could not converge after " << itt << "itterations.\n";
+		std::cout << "Solution could not converge after: \t" << itt << " itteration(s).\n";
 		std::cout << "Consider increasing the maximum number of itterations, or reducing your tolerance.\n";
 	}
 }
 
 
 void Equation_NavierStokes::logVelocity()
-{
+{	
 	std::cout << "x-veloctiy\n";
 	for (int y = nx - 1; y >= 0; --y)
 	{
@@ -150,6 +150,117 @@ void Equation_NavierStokes::logVelocity()
 		std::cout << "\n";
 	}
 	std::cout << "\n";
+
+	std::cout << "pressure correction\n";
+	for (int y = nx - 1; y >= 0; --y)
+	{
+		for (int x = 0; x < nx; ++x)
+		{
+			std::cout << p_c(x, y) << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	std::cout << "Co-ordinates\n";
+	for (int y = nx - 1; y >= 0; --y)
+	{
+		for (int x = 0; x < nx; ++x)
+		{
+			std::cout << "(" << x << ", " << y << ")\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	std::cout << "face velocity (east)\n";
+	for (int y = nx - 1; y >= 0; --y)
+	{
+		for (int x = 0; x < nx; ++x)
+		{
+			std::cout << vel_face(x, y).east << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	std::cout << "face velocity (west)\n";
+	for (int y = nx - 1; y >= 0; --y)
+	{
+		for (int x = 0; x < nx; ++x)
+		{
+			std::cout << vel_face(x, y).west << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	std::cout << "face velocity (north)\n";
+	for (int y = nx - 1; y >= 0; --y)
+	{
+		for (int x = 0; x < nx; ++x)
+		{
+			std::cout << vel_face(x, y).north << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	std::cout << "face velocity (south)\n";
+	for (int y = nx - 1; y >= 0; --y)
+	{
+		for (int x = 0; x < nx; ++x)
+		{
+			std::cout << vel_face(x, y).south << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	std::cout << "x-face-error\n";
+	for (int y = nx - 2; y >= 1; --y)
+	{
+		for (int x = 0; x < nx - 1; ++x)
+		{
+			std::cout << vel_face(x, y).east - vel_face(x + 1, y).west << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	std::cout << "x-face-correction-error\n";
+	for (int y = nx - 2; y >= 1; --y)
+	{
+		for (int x = 0; x < nx - 1; ++x)
+		{
+			std::cout << vel_c_face(x, y).east - vel_c_face(x + 1, y).west << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	std::cout << "y-face-error\n";
+	for (int y = nx - 2; y >= 1; --y)
+	{
+		for (int x = 1; x < nx - 1; ++x)
+		{
+			std::cout << vel_face(x, y).north - vel_face(x, y + 1).south << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	std::cout << "Mass imbalance\n";
+	for (int y = nx - 2; y >= 1; --y)
+	{
+		for (int x = 1; x < nx - 1; ++x)
+		{
+			std::cout << (vel_face(x, y).east - vel_face(x, y).west) + (vel_face(x, y).north - vel_face(x, y).south) << "\t";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
 }
 
 
@@ -612,7 +723,7 @@ void Equation_NavierStokes::updateFaceVelocities()
 			0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
 			0.25 * dy * ao_e * (p(x + 2, y) - p(x, y)) -
 			0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
-
+		
 		vel_face(x, y).west = 0.0;
 
 		vel_face(x, y).north = 0.5 * (v(x, y) + v(x, y + 1)) +
@@ -666,24 +777,26 @@ void Equation_NavierStokes::updateFaceVelocities()
 	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
-		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
+		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
 		0.25 * dy * ao_e * (p(x + 2, y) - p(x, y)) -
 		0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
 
-	vel_face(x, y).west = 0.5 * (u(x, y) + u(x - 1, y)) +
-		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
-		0.25 * dy * ao_w * (p(x, y) - p(x - 1, y)) -
-		0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
+	vel_face(x, y).west = vel_face(x - 1, y).east;
+		//0.5 * (u(x, y) + u(x - 1, y)) +
+		//0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
+		//0.25 * dy * ao_w * (p(x, y) - p(x - 1, y)) -
+		//0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
 
 	vel_face(x, y).north = 0.5 * (v(x, y) + v(x, y + 1)) +
-		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y)) +
+		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
 		0.25 * dx * ao_n * (p(x, y + 2) - p(x, y)) -
 		0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
 
-	vel_face(x, y).south = 0.5 * (v(x, y) + v(x, y - 1)) +
-		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
-		0.25 * dx * ao_s * (p(x, y) - p(x, y - 1)) -
-		0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
+	vel_face(x, y).south = vel_face(x, y - 1).north;
+		//0.5 * (v(x, y) + v(x, y - 1)) +
+		//0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
+		//0.25 * dx * ao_s * (p(x, y) - p(x, y - 1)) -
+		//0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
 
 	// BOTTOM RIGHT CORNER (2nd LAYER)
 	x = nx - 2;
@@ -695,25 +808,27 @@ void Equation_NavierStokes::updateFaceVelocities()
 	ao_n = 1 / Ao(x, y + 1);
 	ao_s = 1 / Ao(x, y - 1);
 
-	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
-		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
-		0.25 * dy * ao_e * (p(x + 1, y) - p(x, y)) -
-		0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
+	vel_face(x, y).east = vel_face(x + 1, y).west;
+		//0.5 * (u(x, y) + u(x + 1, y)) +
+		//0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
+		//0.25 * dy * ao_e * (p(x + 1, y) - p(x, y)) -
+		//0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
 
 	vel_face(x, y).west = 0.5 * (u(x, y) + u(x - 1, y)) +
-		0.25 * dy * ao_o * (p(x, y) - p(x - 1, y)) +
+		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
 		0.25 * dy * ao_w * (p(x, y) - p(x - 2, y)) -
 		0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
 
 	vel_face(x, y).north = 0.5 * (v(x, y) + v(x, y + 1)) +
-		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y)) +
+		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
 		0.25 * dx * ao_n * (p(x, y + 2) - p(x, y)) -
 		0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
 
-	vel_face(x, y).south = 0.5 * (v(x, y) + v(x, y - 1)) +
-		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
-		0.25 * dx * ao_s * (p(x, y) - p(x, y - 1)) -
-		0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
+	vel_face(x, y).south = vel_face(x, y - 1).north;
+		//0.5 * (v(x, y) + v(x, y - 1)) +
+		//0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
+		//0.25 * dx * ao_s * (p(x, y) - p(x, y - 1)) -
+		//0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
 
 	// TOP LEFT CORNER (2nd LAYER)
 	x = 1;
@@ -726,22 +841,24 @@ void Equation_NavierStokes::updateFaceVelocities()
 	ao_s = 1 / Ao(x, y - 1);
 
 	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
-		0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
+		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
 		0.25 * dy * ao_e * (p(x + 2, y) - p(x, y)) -
 		0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
 
-	vel_face(x, y).west = 0.5 * (u(x, y) + u(x - 1, y)) +
-		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
-		0.25 * dy * ao_w * (p(x, y) - p(x - 1, y)) -
-		0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
+	vel_face(x, y).west = vel_face(x - 1, y).east;
+		//0.5 * (u(x, y) + u(x - 1, y)) +
+		//0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
+		//0.25 * dy * ao_w * (p(x, y) - p(x - 1, y)) -
+		//0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
 
-	vel_face(x, y).north = 0.5 * (v(x, y) + v(x, y + 1)) +
-		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
-		0.25 * dx * ao_n * (p(x, y + 1) - p(x, y)) -
-		0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
+	vel_face(x, y).north = vel_face(x, y + 1).south;
+		//0.5 * (v(x, y) + v(x, y + 1)) +
+		//0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
+		//0.25 * dx * ao_n * (p(x, y + 1) - p(x, y)) -
+		//0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
 
 	vel_face(x, y).south = 0.5 * (v(x, y) + v(x, y - 1)) +
-		0.25 * dx * ao_o * (p(x, y) - p(x, y - 1)) +
+		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
 		0.25 * dx * ao_s * (p(x, y) - p(x, y - 2)) -
 		0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
 
@@ -755,23 +872,25 @@ void Equation_NavierStokes::updateFaceVelocities()
 	ao_n = 1 / Ao(x, y + 1);
 	ao_s = 1 / Ao(x, y - 1);
 
-	vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
-		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
-		0.25 * dy * ao_e * (p(x + 1, y) - p(x, y)) -
-		0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
+	vel_face(x, y).east = vel_face(x + 1, y).west;
+		//0.5 * (u(x, y) + u(x + 1, y)) +
+		//0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
+		//0.25 * dy * ao_e * (p(x + 1, y) - p(x, y)) -
+		//0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
 
 	vel_face(x, y).west = 0.5 * (u(x, y) + u(x - 1, y)) +
-		0.25 * dy * ao_o * (p(x, y) - p(x - 1, y)) +
+		0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
 		0.25 * dy * ao_w * (p(x, y) - p(x - 2, y)) -
 		0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
 
-	vel_face(x, y).north = 0.5 * (v(x, y) + v(x, y + 1)) +
-		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
-		0.25 * dx * ao_n * (p(x, y + 1) - p(x, y)) -
-		0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
+	vel_face(x, y).north = vel_face(x, y + 1).south;
+		//0.5 * (v(x, y) + v(x, y + 1)) +
+		//0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
+		//0.25 * dx * ao_n * (p(x, y + 1) - p(x, y)) -
+		//0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
 
 	vel_face(x, y).south = 0.5 * (v(x, y) + v(x, y - 1)) +
-		0.25 * dx * ao_o * (p(x, y) - p(x, y - 1)) +
+		0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
 		0.25 * dx * ao_s * (p(x, y) - p(x, y - 2)) -
 		0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
 
@@ -796,14 +915,15 @@ void Equation_NavierStokes::updateFaceVelocities()
 			0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
 
 		vel_face(x, y).north = 0.5 * (v(x, y) + v(x, y + 1)) +
-			0.25 * dx * ao_o * (p(x, y + 1) - p(x, y)) +
+			0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
 			0.25 * dx * ao_n * (p(x, y + 2) - p(x, y)) -
 			0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
 
-		vel_face(x, y).south = 0.5 * (v(x, y) + v(x, y - 1)) +
-			0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
-			0.25 * dx * ao_s * (p(x, y) - p(x, y - 1)) -
-			0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
+		vel_face(x, y).south = vel_face(x, y - 1).north;
+			//0.5 * (v(x, y) + v(x, y - 1)) +
+			//0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
+			//0.25 * dx * ao_s * (p(x, y) - p(x, y - 1)) -
+			//0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
 	}
 
 	// TOP FACE (2nd LAYER)
@@ -826,13 +946,14 @@ void Equation_NavierStokes::updateFaceVelocities()
 			0.25 * dy * ao_w * (p(x, y) - p(x - 2, y)) -
 			0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
 
-		vel_face(x, y).north = 0.5 * (v(x, y) + v(x, y + 1)) +
-			0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
-			0.25 * dx * ao_n * (p(x, y + 1) - p(x, y)) -
-			0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
+		vel_face(x, y).north = vel_face(x, y + 1).south;
+			//0.5 * (v(x, y) + v(x, y + 1)) +
+			//0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
+			//0.25 * dx * ao_n * (p(x, y + 1) - p(x, y)) -
+			//0.5 * dx * (ao_o + ao_n) * (p(x, y + 1) - p(x, y));
 
 		vel_face(x, y).south = 0.5 * (v(x, y) + v(x, y - 1)) +
-			0.25 * dx * ao_o * (p(x, y) - p(x, y - 1)) +
+			0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
 			0.25 * dx * ao_s * (p(x, y) - p(x, y - 2)) -
 			0.5 * dx * (ao_o + ao_s) * (p(x, y) - p(x, y - 1));
 	}
@@ -848,14 +969,15 @@ void Equation_NavierStokes::updateFaceVelocities()
 		ao_s = 1 / Ao(x, y - 1);
 
 		vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
-			0.25 * dy * ao_o * (p(x + 1, y) - p(x, y)) +
+			0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
 			0.25 * dy * ao_e * (p(x + 2, y) - p(x, y)) -
 			0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
 
-		vel_face(x, y).west = 0.5 * (u(x, y) + u(x - 1, y)) +
-			0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
-			0.25 * dy * ao_w * (p(x, y) - p(x - 1, y)) -
-			0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
+		vel_face(x, y).west = vel_face(x - 1, y).east;
+			//0.5 * (u(x, y) + u(x - 1, y)) +
+			//0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
+			//0.25 * dy * ao_w * (p(x, y) - p(x - 1, y)) -
+			//0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
 
 		vel_face(x, y).north = 0.5 * (v(x, y) + v(x, y + 1)) +
 			0.25 * dx * ao_o * (p(x, y + 1) - p(x, y - 1)) +
@@ -879,13 +1001,14 @@ void Equation_NavierStokes::updateFaceVelocities()
 		ao_n = 1 / Ao(x, y + 1);
 		ao_s = 1 / Ao(x, y - 1);
 
-		vel_face(x, y).east = 0.5 * (u(x, y) + u(x + 1, y)) +
-			0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
-			0.25 * dy * ao_e * (p(x + 1, y) - p(x, y)) -
-			0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
+		vel_face(x, y).east = vel_face(x + 1, y).west;
+			//0.5 * (u(x, y) + u(x + 1, y)) +
+			//0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
+			//0.25 * dy * ao_e * (p(x + 1, y) - p(x, y)) -
+			//0.5 * dy * (ao_o + ao_e) * (p(x + 1, y) - p(x, y));
 
 		vel_face(x, y).west = 0.5 * (u(x, y) + u(x - 1, y)) +
-			0.25 * dy * ao_o * (p(x, y) - p(x - 1, y)) +
+			0.25 * dy * ao_o * (p(x + 1, y) - p(x - 1, y)) +
 			0.25 * dy * ao_w * (p(x, y) - p(x - 2, y)) -
 			0.5 * dy * (ao_o + ao_w) * (p(x, y) - p(x - 1, y));
 
@@ -1223,8 +1346,12 @@ void Equation_NavierStokes::updateVelocityCorrection()
 	ao_n = 1 / Ao(x, y + 1);
 	ao_s = 0.0;
 
-	u_c(x, y) = 0.25 * dy * ao_o * (p_c(x, y) - p_c(x + 1, y));
-	v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y) - p_c(x, y + 1));
+	//u_c(x, y) = 0.25 * dy * ao_o * (p_c(x, y) - p_c(x + 1, y));
+	u_c(x, y) = 0.5 * dy * ao_o * (p_c(x, y) - p_c(x + 1, y));
+	//u_c(x, y) = 0.5 * dy * ao_o * (-p_c(x + 1, y));
+	//v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y) - p_c(x, y + 1));
+	v_c(x, y) = 0.5 * dx * ao_o * (p_c(x, y) - p_c(x, y + 1));
+	//v_c(x, y) = 0.5 * dx * ao_o * (-p_c(x, y + 1));
 
 	vel_c_face(x, y).east = 0.5 * dy * (ao_o + ao_e) * (p_c(x, y) - p_c(x + 1, y));
 	vel_c_face(x, y).west = 0.0;
@@ -1241,8 +1368,12 @@ void Equation_NavierStokes::updateVelocityCorrection()
 	ao_n = 1 / Ao(x, y + 1);
 	ao_s = 0.0;
 
-	u_c(x, y) = 0.25 * dy * ao_o * (p_c(x - 1, y) - p_c(x, y));
-	v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y) - p_c(x, y + 1));
+	//u_c(x, y) = 0.25 * dy * ao_o * (p_c(x - 1, y) - p_c(x, y));
+	u_c(x, y) = 0.5 * dy * ao_o * (p_c(x - 1, y) - p_c(x, y));
+	//u_c(x, y) = 0.5 * dy * ao_o * (p_c(x - 1, y));
+	//v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y) - p_c(x, y + 1));
+	v_c(x, y) = 0.5 * dx * ao_o * (p_c(x, y) - p_c(x, y + 1));
+	//v_c(x, y) = 0.5 * dx * ao_o * (-p_c(x, y + 1));
 
 	vel_c_face(x, y).east = 0.0;
 	vel_c_face(x, y).west = 0.5 * dy * (ao_o + ao_w) * (p_c(x - 1, y) - p_c(x, y));
@@ -1259,8 +1390,12 @@ void Equation_NavierStokes::updateVelocityCorrection()
 	ao_n = 0.0;
 	ao_s = 1 / Ao(x, y - 1);
 
-	u_c(x, y) = 0.25 * dy * ao_o * (p_c(x, y) - p_c(x + 1, y));
-	v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y - 1) - p_c(x, y));
+	//u_c(x, y) = 0.25 * dy * ao_o * (p_c(x, y) - p_c(x + 1, y));
+	u_c(x, y) = 0.5 * dy * ao_o * (p_c(x, y) - p_c(x + 1, y));
+	//u_c(x, y) = 0.5 * dy * ao_o * (-p_c(x + 1, y));
+	//v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y - 1) - p_c(x, y));
+	v_c(x, y) = 0.5 * dx * ao_o * (p_c(x, y - 1) - p_c(x, y));
+	//v_c(x, y) = 0.5 * dx * ao_o * (p_c(x, y - 1));
 
 	vel_c_face(x, y).east = 0.5 * dy * (ao_o + ao_e) * (p_c(x, y) - p_c(x + 1, y));
 	vel_c_face(x, y).west = 0.0;
@@ -1277,8 +1412,12 @@ void Equation_NavierStokes::updateVelocityCorrection()
 	ao_n = 0.0;
 	ao_s = 1 / Ao(x, y - 1);
 
-	u_c(x, y) = 0.25 * dy * ao_o * (p_c(x - 1, y) - p_c(x, y));
-	v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y - 1) - p_c(x, y));
+	//u_c(x, y) = 0.25 * dy * ao_o * (p_c(x - 1, y) - p_c(x, y));
+	u_c(x, y) = 0.5 * dy * ao_o * (p_c(x - 1, y) - p_c(x, y));
+	//u_c(x, y) = 0.5 * dy * ao_o * (p_c(x - 1, y));
+	//v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y - 1) - p_c(x, y));
+	v_c(x, y) = 0.5 * dx * ao_o * (p_c(x, y - 1) - p_c(x, y));
+	//v_c(x, y) = 0.5 * dx * ao_o * (p_c(x, y - 1));
 
 	vel_c_face(x, y).east = 0.0;
 	vel_c_face(x, y).west = 0.5 * dy * (ao_o + ao_w) * (p_c(x - 1, y) - p_c(x, y));
@@ -1296,7 +1435,9 @@ void Equation_NavierStokes::updateVelocityCorrection()
 		ao_s = 0.0;
 
 		u_c(x, y) = 0.5 * dy * ao_o * (p_c(x - 1, y) - p_c(x + 1, y));
-		v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y) - p_c(x, y + 1));
+		//v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y) - p_c(x, y + 1));
+		v_c(x, y) = 0.5 * dx * ao_o * (p_c(x, y) - p_c(x, y + 1));
+		//v_c(x, y) = 0.5 * dx * ao_o * (-p_c(x, y + 1));
 
 		vel_c_face(x, y).east = 0.5 * dy * (ao_o + ao_e) * (p_c(x, y) - p_c(x + 1, y));
 		vel_c_face(x, y).west = 0.5 * dy * (ao_o + ao_w) * (p_c(x - 1, y) - p_c(x, y));
@@ -1315,7 +1456,9 @@ void Equation_NavierStokes::updateVelocityCorrection()
 		ao_s = 1 / Ao(x, y - 1);
 
 		u_c(x, y) = 0.5 * dy * ao_o * (p_c(x - 1, y) - p_c(x + 1, y));
-		v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y - 1) - p_c(x, y));
+		//v_c(x, y) = 0.25 * dx * ao_o * (p_c(x, y - 1) - p_c(x, y));
+		v_c(x, y) = 0.5 * dx * ao_o * (p_c(x, y - 1) - p_c(x, y));
+		//v_c(x, y) = 0.5 * dx * ao_o * (p_c(x, y - 1));
 
 		vel_c_face(x, y).east = 0.5 * dy * (ao_o + ao_e) * (p_c(x, y) - p_c(x + 1, y));
 		vel_c_face(x, y).west = 0.5 * dy * (ao_o + ao_w) * (p_c(x - 1, y) - p_c(x, y));
@@ -1333,7 +1476,9 @@ void Equation_NavierStokes::updateVelocityCorrection()
 		ao_n = 1 / Ao(x, y + 1);
 		ao_s = 1 / Ao(x, y - 1);
 
-		u_c(x, y) = 0.25 * dy * ao_o * (p_c(x, y) - p_c(x + 1, y));
+		//u_c(x, y) = 0.25 * dy * ao_o * (p_c(x, y) - p_c(x + 1, y));
+		u_c(x, y) = 0.5 * dy * ao_o * (p_c(x, y) - p_c(x + 1, y));
+		//u_c(x, y) = 0.5 * dy * ao_o * (-p_c(x + 1, y));
 		v_c(x, y) = 0.5 * dx * ao_o * (p_c(x, y - 1) - p_c(x, y + 1));
 
 		vel_c_face(x, y).east = 0.5 * dy * (ao_o + ao_e) * (p_c(x, y) - p_c(x + 1, y));
@@ -1352,7 +1497,9 @@ void Equation_NavierStokes::updateVelocityCorrection()
 		ao_n = 1 / Ao(x, y + 1);
 		ao_s = 1 / Ao(x, y - 1);
 
-		u_c(x, y) = 0.25 * dy * ao_o * (p_c(x - 1, y) - p_c(x, y));
+		//u_c(x, y) = 0.25 * dy * ao_o * (p_c(x - 1, y) - p_c(x, y));
+		u_c(x, y) = 0.5 * dy * ao_o * (p_c(x - 1, y) - p_c(x, y));
+		//u_c(x, y) = 0.5 * dy * ao_o * (p_c(x - 1, y));
 		v_c(x, y) = 0.5 * dx * ao_o * (p_c(x, y - 1) - p_c(x, y + 1));
 
 		vel_c_face(x, y).east = 0.0;
