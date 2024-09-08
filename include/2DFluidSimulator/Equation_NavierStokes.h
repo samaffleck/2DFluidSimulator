@@ -43,20 +43,25 @@ private:
 	Eigen::MatrixXd Ap_s{};
 	Eigen::MatrixXd Sp{};
 
+	// Tuning parameters
+	double p_relax = 0.2;
+	double vel_relax = 0.8; // 0.8
+	double tolerance = 1e-10;
+
 	// Resuduals
 	double res_u;
 	double res_v;
 	double res_p;
 
-	// Tuning parameters
-	double p_relax = 0.2;
-	double vel_relax = 0.8;
-	double tolerance = 1e-7;
+	// Max residuals
+	double res_u_max = tolerance;
+	double res_v_max = tolerance;
+	double res_p_max = tolerance;
 
 	// Other
 	int nx{};
 	int ny{};
-	double u_lid = 0.05;
+	double u_lid = 1.0;
 
 private:
 	void updateLinkCoefficient();

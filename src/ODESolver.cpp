@@ -15,23 +15,66 @@ void ODESolver::solve(Eigen::MatrixXd& var,
 	const Eigen::MatrixXd& Aw,
 	const Eigen::MatrixXd& An,
 	const Eigen::MatrixXd& As,
-	const Eigen::MatrixXd& S, 
+	const Eigen::MatrixXd& S,
+	double& normalisedResidual,
+	double tolerance,
 	double damping_factor)
 {
 	// Gauss-seidel method
-	double error = 10 * m_tolerance; //getResidual(var, Ao, Ae, Aw, An, As, S);
-	int itterations = 0;
-	int maxItterations = 2000;
+	auto res = var;
+	double absoluteResidual = tolerance * 10; //getResidualVector(var, Ao, Ae, Aw, An, As, S, res);
+	//double maximumResidual = absoluteResidual;
+	//normalisedResidual = absoluteResidual / (maximumResidual + 1e-15); // = 1 so it gets us to enter the while loop unless tol = 1
 	m_damping_factor = damping_factor;
 
-	while (error > m_tolerance && itterations < maxItterations)
+	int itterations = 0;
+	int maxItterations = 10000;
+
+	while (absoluteResidual > tolerance && itterations < maxItterations)
 	{
 		update(var, Ao, Ae, Aw, An, As, S);
-		error = getResidual(var, Ao, Ae, Aw, An, As, S);
+		absoluteResidual = getResidualVector(var, Ao, Ae, Aw, An, As, S, res);
+		//if (absoluteResidual > maximumResidual)
+		//{
+		//	maximumResidual = absoluteResidual;
+		//}
+		//normalisedResidual = absoluteResidual / (maximumResidual + 1e-15);
 		itterations++;
 	}
 
-	std::cout << "Equation Solved Successfully. \nError : " << error << "\tInner Itterations : " << itterations << std::endl;
+	std::cout << "Equation Solved Successfully. \nNormalised Residual : " << absoluteResidual << "\tInner Itterations : " << itterations << std::endl;
+}
+
+void ODESolver::solveInCorrectionForm(Eigen::MatrixXd& var, const Eigen::MatrixXd& Ao, const Eigen::MatrixXd& Ae, const Eigen::MatrixXd& Aw, const Eigen::MatrixXd& An, const Eigen::MatrixXd& As, const Eigen::MatrixXd& S, double& normalisedResidual, double tolerance, double damping_factor)
+{
+	// Gauss-seidel method
+	auto res = var;
+	double absoluteResidual = getResidualVector(var, Ao, Ae, Aw, An, As, S, res);
+	double maximumResidual = absoluteResidual;
+	normalisedResidual = absoluteResidual / (maximumResidual + 1e-15); // = 1 so it gets us to enter the while loop unless tol = 1
+	m_damping_factor = damping_factor;
+
+	int itterations = 0;
+	int maxItterations = 10000;
+
+	auto var_c = var;
+	var_c.setConstant(0.0);
+
+	while (normalisedResidual > tolerance && itterations < maxItterations)
+	{
+		update(var_c, Ao, Ae, Aw, An, As, res);
+		var += var_c;
+		absoluteResidual = getResidualVector(var, Ao, Ae, Aw, An, As, S, res);
+		if (absoluteResidual > maximumResidual)
+		{
+			maximumResidual = absoluteResidual;
+		}
+		assert(maximumResidual != 0);
+		normalisedResidual = absoluteResidual / (maximumResidual + 1e-15);
+		itterations++;
+	}
+
+	std::cout << "Equation Solved Successfully. \nNormalised Residual : " << normalisedResidual << "\tInner Itterations : " << itterations << std::endl;
 }
 
 
@@ -57,22 +100,22 @@ void ODESolver::update(Eigen::MatrixXd& var,
 }
 
 
-double ODESolver::getResidual(const Eigen::MatrixXd& var,
+double ODESolver::getResidualVector(const Eigen::MatrixXd& var,
 	const Eigen::MatrixXd& Ao,
 	const Eigen::MatrixXd& Ae,
 	const Eigen::MatrixXd& Aw,
 	const Eigen::MatrixXd& An,
 	const Eigen::MatrixXd& As,
-	const Eigen::MatrixXd& S)
+	const Eigen::MatrixXd& S,
+	Eigen::MatrixXd& res)
 {
-	auto res = var; // Create a matrix of the same size to store the error
-
 	for (int x = 0; x < nx; ++x)
 	{
 		for (int y = 0; y < ny; ++y)
 		{
 			setNeighbourCells(var, x, y);
-			res(x, y) = Ao(x, y) * var(x, y) + Ae(x, y) * ve + Aw(x, y) * vw + An(x, y) * vn + As(x, y) * vs - S(x, y);
+			//res(x, y) = Ao(x, y) * var(x, y) + Ae(x, y) * ve + Aw(x, y) * vw + An(x, y) * vn + As(x, y) * vs - S(x, y);
+			res(x, y) = S(x, y) - Ao(x, y) * var(x, y) - Ae(x, y) * ve - Aw(x, y) * vw - An(x, y) * vn - As(x, y) * vs;
 		}
 	}
 

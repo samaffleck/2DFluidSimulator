@@ -13,9 +13,6 @@ public:
 public:
 	double D = 1e-5;				// Diffusion coefficient
 
-public:
-	Eigen::MatrixXd& getV() { return v; }
-
 private:
 	Eigen::MatrixXd v{};	// Scalar field, e.g. Temperature
 	
@@ -29,5 +26,6 @@ private:
 
 	int m_numberOfXCells{};
 	int m_numberOfYCells{};
+	double normalisedResidual = 1;
 
 };

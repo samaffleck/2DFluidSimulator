@@ -138,7 +138,7 @@ void Equation_Diffusion::update()
 	}
 
 	// Solve the equation
-	m_solver.solve(v, Ao, Ae, Aw, An, As, S);
+	m_solver.solve(v, Ao, Ae, Aw, An, As, S, normalisedResidual, 1e-6);
 }
 
 

@@ -16,14 +16,27 @@ public:
 		const Eigen::MatrixXd& An,
 		const Eigen::MatrixXd& As,
 		const Eigen::MatrixXd& S,
+		double& normalisedResidual,
+		double tolerance,
 		double damping_factor = 0.0);
-	double getResidual(const Eigen::MatrixXd& var,
+	void solveInCorrectionForm(Eigen::MatrixXd& var,
 		const Eigen::MatrixXd& Ao,
 		const Eigen::MatrixXd& Ae,
 		const Eigen::MatrixXd& Aw,
 		const Eigen::MatrixXd& An,
 		const Eigen::MatrixXd& As,
-		const Eigen::MatrixXd& S);
+		const Eigen::MatrixXd& S,
+		double& normalisedResidual,
+		double tolerance,
+		double damping_factor = 0.0);
+	double getResidualVector(const Eigen::MatrixXd& var,
+		const Eigen::MatrixXd& Ao,
+		const Eigen::MatrixXd& Ae,
+		const Eigen::MatrixXd& Aw,
+		const Eigen::MatrixXd& An,
+		const Eigen::MatrixXd& As,
+		const Eigen::MatrixXd& S,
+		Eigen::MatrixXd& res);
 
 	double leftBoundary{};
 	double rightBoundary{};
@@ -31,7 +44,6 @@ public:
 	double bottomBoundary{};
 
 private:
-	double m_tolerance = 1e-4;
 	int nx{}, ny{};
 	double ve{}, vw{}, vn{}, vs{};
 	int m_damping_factor{};

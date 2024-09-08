@@ -28,8 +28,8 @@ bool testDiffusion()
 bool testNavierStokes()
 {
 	Domain domain;
-	domain.getMesh().setNumberOfXCells(20);
-	domain.getMesh().setNumberOfYCells(20);
+	domain.getMesh().setNumberOfXCells(10);
+	domain.getMesh().setNumberOfYCells(10);
 	domain.getMesh().setDomainLengthX(1);
 	domain.getMesh().setDomainLengthY(1);
 
@@ -48,3 +48,4 @@ int main()
 
 	return 0;
 }
+ 
